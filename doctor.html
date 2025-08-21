@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>醫生儀表板 - 智慧醫療系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .main-view { height: calc(100vh - 68px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+        .modal-overlay { transition: opacity 0.3s ease; }
+        .modal-container { transition: transform 0.3s ease; }
+        .sidebar-item { cursor: pointer; transition: background-color 0.2s ease-in-out; }
+        .sidebar-item.active { background-color: #eef2ff; border-right: 4px solid #4f46e5; }
+        .appointment-card { cursor: pointer; transition: border-color 0.2s ease-in-out; }
+        .appointment-card.active { border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5); }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- 登入/註冊 Template -->
+    <template id="auth-template">
+        <div class="min-h-screen flex items-center justify-center">
+            <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+                <!-- 登入畫面 -->
+                <div id="login-view">
+                    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">醫生登入</h2>
+                    <form id="login-form">
+                        <div class="mb-4">
+                            <label for="login-username" class="block text-gray-700 text-sm font-bold mb-2">帳號</label>
+                            <input type="text" id="login-username" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
+                        </div>
+                        <div class="mb-6">
+                            <label for="login-password" class="block text-gray-700 text-sm font-bold mb-2">密碼</label>
+                            <input type="password" id="login-password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" required>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">登入</button>
+                        <p id="login-error-message" class="mt-4 text-center text-red-500 text-xs"></p>
+                    </form>
+                    <p class="mt-4 text-center text-sm">還沒有帳號嗎？ <a href="#" id="go-to-register" class="text-indigo-600 hover:underline">點此註冊</a></p>
+                </div>
+                <!-- 註冊畫面 -->
+                <div id="register-view" class="hidden">
+                    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">註冊醫生帳號</h2>
+                    <form id="register-form">
+                        <div class="mb-4">
+                            <label for="register-name" class="block text-gray-700 text-sm font-bold mb-2">姓名</label>
+                            <input type="text" id="register-name" class="shadow border rounded w-full py-2 px-3" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="register-specialty" class="block text-gray-700 text-sm font-bold mb-2">科別</label>
+                            <input type="text" id="register-specialty" placeholder="例如: 心臟內科" class="shadow border rounded w-full py-2 px-3" required>
+                        </div>
+                        <hr class="my-4">
+                        <div class="mb-4">
+                            <label for="register-username" class="block text-gray-700 text-sm font-bold mb-2">設定帳號</label>
+                            <input type="text" id="register-username" class="shadow border rounded w-full py-2 px-3" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="register-password" class="block text-gray-700 text-sm font-bold mb-2">設定密碼</label>
+                            <input type="password" id="register-password" class="shadow border rounded w-full py-2 px-3" required>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">註冊</button>
+                        <p id="register-message" class="mt-4 text-center text-xs"></p>
+                    </form>
+                    <p class="mt-4 text-center text-sm">已經有帳號了？ <a href="#" id="go-to-login" class="text-indigo-600 hover:underline">返回登入</a></p>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- 登入畫面容器 -->
+    <div id="auth-container"></div>
+
+    <!-- 主應用程式畫面 -->
+    <div id="main-app-view" class="hidden">
+        <header class="bg-white shadow-md">
+            <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <h1 class="text-xl font-bold text-indigo-600">醫生儀表板</h1>
+                <div>
+                    <span id="doctor-name-display" class="text-gray-700 mr-4"></span>
+                    <button id="logout-button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">登出</button>
+                </div>
+            </nav>
+        </header>
+        
+        <div class="main-view flex">
+            <!-- 左側病患選單 -->
+            <aside class="w-1/4 bg-white border-r flex flex-col">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">我的病患</h2>
+                    <button id="add-appointment-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-3 rounded text-sm">+ 新增預約</button>
+                </div>
+                <nav id="sidebar-menu" class="flex-grow custom-scrollbar overflow-y-auto"></nav>
+            </aside>
+
+            <!-- 右側主內容區 -->
+            <div id="main-content-area" class="w-3/4 custom-scrollbar overflow-y-auto">
+                <!-- 病歷總覽介面 -->
+                <main id="chart-view" class="h-full p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 hidden">
+                    <!-- 左欄 (病患資訊) -->
+                    <div class="bg-white rounded-lg shadow-lg flex flex-col">
+                        <div class="p-4 border-b">
+                            <h3 id="chart-patient-name" class="text-2xl font-bold text-gray-800"></h3>
+                            <p id="chart-patient-info" class="text-gray-500 mt-1"></p>
+                        </div>
+                        <div class="p-4 custom-scrollbar flex-grow overflow-y-auto">
+                            <div id="pre-fill-title-container" class="flex justify-between items-center mb-2">
+                                <h4 class="font-semibold text-gray-700">預約與回報紀錄</h4>
+                            </div>
+                            <div id="consult-pre-fill" class="text-sm text-gray-600 space-y-4"></div>
+                        </div>
+                    </div>
+
+                    <!-- 中欄 (互動區) -->
+                    <div class="bg-white rounded-lg shadow-lg flex flex-col">
+                        <div class="p-4 border-b flex justify-between items-center">
+                            <h3 id="interaction-title" class="font-bold text-lg text-gray-800">即時互動區</h3>
+                            <button id="start-recording-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">開始錄音</button>
+                        </div>
+                        <div class="p-4 flex-grow grid grid-rows-2 gap-4">
+                            <div class="flex flex-col">
+                                <h4 class="font-semibold text-gray-700 mb-2">即時逐字稿</h4>
+                                <!-- [修改] 將 div 改為 textarea，使其可編輯 -->
+                                <textarea id="transcript-area" class="flex-grow p-3 bg-gray-50 rounded custom-scrollbar overflow-y-auto text-gray-700" placeholder="(點擊上方按鈕開始錄音，或手動輸入)"></textarea>
+                                <!-- [新增] 新增「生成摘要」按鈕 -->
+                                <button id="generate-summary-btn" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">由逐字稿生成摘要</button>
+                            </div>
+                            <div class="flex flex-col">
+                                <h4 class="font-semibold text-gray-700 mb-2">AI 輔助提示</h4>
+                                <div id="ai-assist-area" class="flex-grow p-3 bg-gray-50 rounded custom-scrollbar overflow-y-auto text-gray-500">(...)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右欄 (摘要與功能) -->
+                    <div class="bg-white rounded-lg shadow-lg flex flex-col">
+                        <div class="p-4 border-b">
+                            <h3 id="summary-title" class="font-bold text-lg text-gray-800">AI 問診摘要</h3>
+                        </div>
+                        <div class="p-4 flex-grow flex flex-col">
+                            <textarea id="summary-textarea" class="w-full flex-grow p-3 border rounded-lg custom-scrollbar" placeholder="點擊左側「生成摘要」按鈕，或手動輸入..."></textarea>
+                            <div class="mt-4 space-y-2">
+                                <button id="approve-summary-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">批准並發送摘要</button>
+                                <button id="prescribe-btn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded">開立處方</button>
+                                <button id="view-records-btn" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded">查看病歷</button>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                <div id="welcome-view" class="h-full flex items-center justify-center">
+                    <p class="text-gray-500 text-xl">請從左側選單選擇一位病患以查看資料</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 容器 -->
+    <div id="modal-container" class="hidden">
+        <!-- 新增預約 Modal -->
+        <div id="add-appointment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full modal-overlay opacity-0">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white transform scale-95 modal-container">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold">新增預約</p>
+                    <button class="close-modal-btn cursor-pointer z-50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form id="add-appointment-form">
+                    <div class="mb-4">
+                        <label for="patient-select" class="block text-sm font-medium text-gray-700">選擇病患</label>
+                        <select id="patient-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" required></select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="appointment-date" class="block text-sm font-medium text-gray-700">預約日期與時間</label>
+                        <input type="datetime-local" id="appointment-date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="appointment-reason" class="block text-sm font-medium text-gray-700">看診原因</label>
+                        <textarea id="appointment-reason" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">確認新增</button>
+                    <p id="add-appointment-message" class="mt-4 text-center text-sm"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- 開立處方 Modal -->
+        <div id="prescribe-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full modal-overlay opacity-0">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white transform scale-95 modal-container">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold">開立處方</p>
+                    <button class="close-modal-btn cursor-pointer z-50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form id="prescribe-form">
+                    <input type="hidden" id="prescribe-patient-id">
+                    <input type="hidden" id="prescribe-appointment-id">
+                    <div class="mb-4">
+                        <label for="medication-name" class="block text-sm font-medium text-gray-700">藥品名稱</label>
+                        <input type="text" id="medication-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="dosage" class="block text-sm font-medium text-gray-700">劑量</label>
+                        <input type="text" id="dosage" placeholder="例如: 10mg" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="frequency" class="block text-sm font-medium text-gray-700">頻率</label>
+                        <input type="text" id="frequency" placeholder="例如: 每日三次，飯後服用" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
+                    </div>
+                    <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded">送出處方</button>
+                    <p id="prescribe-message" class="mt-4 text-center text-sm"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- 查看病歷 Modal -->
+        <div id="records-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full modal-overlay opacity-0">
+            <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white transform scale-95 modal-container">
+                <div class="flex justify-between items-center pb-3 border-b mb-4">
+                    <h3 class="text-2xl font-bold">病歷紀錄: <span id="records-patient-name"></span></h3>
+                    <button class="close-modal-btn cursor-pointer z-50">
+                       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="records-content" class="space-y-4 max-h-[70vh] custom-scrollbar overflow-y-auto">
+                    <!-- Records will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- 常數與狀態變數 ---
+    const baseURL = 'http://localhost:8000'; 
+
+    // --- DOM 元素參考 ---
+    const authContainer = document.getElementById('auth-container');
+    const mainAppView = document.getElementById('main-app-view');
+    const chartView = document.getElementById('chart-view');
+    const welcomeView = document.getElementById('welcome-view');
+    const doctorNameDisplay = document.getElementById('doctor-name-display');
+    const logoutButton = document.getElementById('logout-button');
+    const sidebarMenu = document.getElementById('sidebar-menu');
+    const addAppointmentBtn = document.getElementById('add-appointment-btn');
+    const modalContainer = document.getElementById('modal-container');
+    const addAppointmentModal = document.getElementById('add-appointment-modal');
+    const prescribeModal = document.getElementById('prescribe-modal');
+    const recordsModal = document.getElementById('records-modal');
+    const addAppointmentForm = document.getElementById('add-appointment-form');
+    const prescribeForm = document.getElementById('prescribe-form');
+
+    // --- 應用程式狀態 ---
+    let allPatients = [];
+    let allAppointments = [];
+    let currentDoctorProfile = null;
+    let currentPatientForActions = null;
+    let currentAppointmentForActions = null; 
+    
+    // --- 錄音狀態 ---
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let recordingTimerInterval = null;
+    let recordingSeconds = 0;
+
+    // --- API 輔助函式 ---
+    async function apiRequest(endpoint, method = 'GET', body = null) {
+        const token = localStorage.getItem('authToken');
+        const headers = {};
+        if (!(body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        const config = { method, headers };
+        if (body) {
+            if (endpoint === '/token') {
+                headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                config.body = new URLSearchParams(body);
+            } else if (body instanceof FormData) {
+                config.body = body;
+            } else {
+                config.body = JSON.stringify(body);
+            }
+        }
+        try {
+            const response = await fetch(`${baseURL}${endpoint}`, config);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `請求失敗 (狀態碼: ${response.status})`);
+            }
+            return response.status === 204 ? null : await response.json();
+        } catch (error) {
+            console.error(`API 錯誤 on ${method} ${endpoint}:`, error);
+            throw error;
+        }
+    }
+
+    // --- 工具函式 ---
+    function formatDateTime(isoString) {
+        if (!isoString) return '無';
+        const date = new Date(isoString.includes('Z') ? isoString : isoString + 'Z'); 
+        return date.toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    // --- 互動視窗管理 ---
+    function openModal(modalElement) {
+        if (!modalElement) return;
+        modalContainer.classList.remove('hidden');
+        modalElement.classList.remove('hidden');
+        setTimeout(() => {
+            modalElement.classList.remove('opacity-0');
+            const container = modalElement.querySelector('.modal-container');
+            if (container) container.classList.remove('scale-95');
+        }, 10);
+    }
+
+    function closeModal() {
+        const openModalElement = modalContainer.querySelector('.modal-overlay:not(.hidden)');
+        if (openModalElement) {
+            openModalElement.classList.add('opacity-0');
+            const container = openModalElement.querySelector('.modal-container');
+            if (container) container.classList.add('scale-95');
+            setTimeout(() => {
+                openModalElement.classList.add('hidden');
+                modalContainer.classList.add('hidden');
+            }, 300);
+        }
+    }
+
+    // --- UI 渲染 ---
+    function renderPatientSidebar(patients) {
+        allPatients = patients;
+        if (!patients || patients.length === 0) {
+            sidebarMenu.innerHTML = '<p class="p-4 text-center text-gray-500 text-sm">目前沒有任何病患。</p>';
+            return;
+        }
+        sidebarMenu.innerHTML = patients.map((patient, index) => `
+            <div data-index="${index}" class="sidebar-item p-4 border-b last:border-b-0">
+                <p class="font-semibold text-gray-800">${patient.name}</p>
+                <p class="text-sm text-gray-500">ID: ${patient.id}</p>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                const index = e.currentTarget.dataset.index;
+                showChartView(allPatients[index]);
+            });
+        });
+    }
+
+    function showChartView(patient) {
+        currentPatientForActions = patient;
+        welcomeView.classList.add('hidden');
+        chartView.classList.remove('hidden');
+        chartView.classList.add('grid');
+        document.getElementById('chart-patient-name').textContent = patient.name;
+        document.getElementById('chart-patient-info').textContent = `性別: ${patient.gender} | 生日: ${patient.birthDate}`;
+        
+        const mostRecentAppointment = allAppointments
+            .filter(appt => appt.patient.id === patient.id)
+            .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))[0];
+        
+        currentAppointmentForActions = mostRecentAppointment || null;
+        
+        renderPrefillInChart(patient);
+        updateInteractionPanels(currentAppointmentForActions);
+    }
+
+    function updateInteractionPanels(appointment) {
+        currentAppointmentForActions = appointment;
+
+        const interactionTitle = document.getElementById('interaction-title');
+        const summaryTitle = document.getElementById('summary-title');
+        const startRecordingBtn = document.getElementById('start-recording-btn');
+        const approveSummaryBtn = document.getElementById('approve-summary-btn');
+        const prescribeBtn = document.getElementById('prescribe-btn');
+        const transcriptArea = document.getElementById('transcript-area');
+        const summaryTextarea = document.getElementById('summary-textarea');
+        const generateSummaryBtn = document.getElementById('generate-summary-btn');
+
+        if (appointment) {
+            const appointmentDateStr = formatDateTime(appointment.appointment_date);
+            interactionTitle.innerHTML = `即時互動區 <span class="text-sm font-normal text-gray-500">(${appointmentDateStr})</span>`;
+            summaryTitle.innerHTML = `AI 問診摘要 <span class="text-sm font-normal text-gray-500">(${appointmentDateStr})</span>`;
+            
+            startRecordingBtn.disabled = false;
+            approveSummaryBtn.disabled = false;
+            prescribeBtn.disabled = false;
+            generateSummaryBtn.disabled = false;
+            transcriptArea.value = '';
+            transcriptArea.placeholder = '(點擊上方按鈕開始錄音，或手動輸入)';
+            summaryTextarea.value = appointment.summary || '';
+
+            prescribeBtn.onclick = () => {
+                prescribeForm.reset();
+                document.getElementById('prescribe-patient-id').value = appointment.patient.id;
+                document.getElementById('prescribe-appointment-id').value = appointment.id;
+                document.getElementById('prescribe-message').textContent = '';
+                openModal(prescribeModal);
+            };
+
+            approveSummaryBtn.onclick = async () => {
+                const summaryText = summaryTextarea.value.trim();
+                if (!summaryText) {
+                    alert('摘要內容不可為空！');
+                    return;
+                }
+                try {
+                    await apiRequest(`/appointments/${appointment.id}/summary`, 'POST', { summary: summaryText });
+                    alert('摘要已成功發送給病患！');
+                    refreshData();
+                } catch (error) {
+                    alert(`發送摘要失敗: ${error.message}`);
+                }
+            };
+
+        } else {
+            interactionTitle.textContent = '即時互動區';
+            summaryTitle.textContent = 'AI 問診摘要';
+            
+            startRecordingBtn.disabled = true;
+            approveSummaryBtn.disabled = true;
+            prescribeBtn.disabled = true;
+            generateSummaryBtn.disabled = true;
+            transcriptArea.value = '';
+            transcriptArea.placeholder = '(請先為此病患新增預約)';
+            summaryTextarea.value = '';
+            prescribeBtn.onclick = null;
+            approveSummaryBtn.onclick = null;
+        }
+
+        document.getElementById('start-recording-btn').onclick = toggleRecording;
+        document.getElementById('view-records-btn').onclick = () => {
+            if (currentPatientForActions) {
+                 openModal(recordsModal);
+                 loadAndRenderRecords(currentPatientForActions.id, currentPatientForActions.name);
+            }
+        };
+    }
+
+    function renderPrefillInChart(patient) {
+        const container = document.getElementById('consult-pre-fill');
+        const titleContainer = document.getElementById('pre-fill-title-container');
+        titleContainer.innerHTML = '<h4 class="font-semibold text-gray-700">預約與回報紀錄</h4>';
+
+        const patientAppointments = allAppointments
+            .filter(appt => appt.patient.id === patient.id)
+            .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date));
+
+        if (patientAppointments.length > 0) {
+            container.innerHTML = patientAppointments.map(appt => {
+                const isActive = currentAppointmentForActions && appt.id === currentAppointmentForActions.id;
+                let html = `<div data-appointment-id="${appt.id}" class="appointment-card relative p-3 border rounded-lg bg-gray-50 space-y-2 ${isActive ? 'active' : ''}">`;
+                html += `<button data-appointment-id="${appt.id}" class="delete-appointment-btn absolute top-2 right-2 bg-red-100 text-red-600 hover:bg-red-200 p-1 rounded-full"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>`;
+                html += `<div><strong class="text-gray-700">預約時間:</strong><p class="pl-2">${formatDateTime(appt.appointment_date)}</p></div>`;
+                html += `<div><strong class="text-gray-700">看診原因:</strong><p class="pl-2">${appt.reason || '<span class="text-gray-400">未提供</span>'}</p></div>`;
+                if (appt.tasks && appt.tasks.length > 0) {
+                    html += `<div class="pt-2 border-t mt-2">`;
+                    appt.tasks.forEach(task => {
+                        const description = task.description;
+                        const submissionTime = formatDateTime(task.created_at);
+                        html += `<div class="text-xs text-gray-500 mb-1">回報時間: ${submissionTime}</div>`;
+                        if (!description.includes('[症狀]:') && !description.includes('[提問]:')) {
+                            html += `<p class="pl-2">${description}</p>`;
+                        } else {
+                            const parts = description.split('|');
+                            const symptoms = (parts.find(p => p.includes('[症狀]:')) || '').replace('[症狀]:', '').trim();
+                            const questions = (parts.find(p => p.includes('[提問]:')) || '').replace('[提問]:', '').trim();
+                            html += `<div><strong class="text-gray-600 text-sm">症狀回報:</strong><p class="pl-2 text-gray-800">${symptoms || '<span class="text-gray-400">無</span>'}</p></div>`;
+                            html += `<div><strong class="text-gray-600 text-sm">想問醫生的問題:</strong><p class="pl-2 text-gray-800">${questions || '<span class="text-gray-400">無</span>'}</p></div>`;
+                        }
+                    });
+                    html += `</div>`;
+                }
+                html += '</div>';
+                return html;
+            }).join('');
+
+            document.querySelectorAll('.appointment-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const appointmentId = e.currentTarget.dataset.appointmentId;
+                    const selectedAppointment = patientAppointments.find(a => a.id == appointmentId);
+                    
+                    document.querySelectorAll('.appointment-card').forEach(c => c.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+
+                    updateInteractionPanels(selectedAppointment);
+                });
+            });
+
+            document.querySelectorAll('.delete-appointment-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    e.stopPropagation(); 
+                    const appointmentId = e.currentTarget.dataset.appointmentId;
+                    if (confirm('您確定要刪除此筆預約紀錄嗎？')) {
+                        try {
+                            await apiRequest(`/appointments/${appointmentId}`, 'DELETE');
+                            refreshData();
+                        } catch (error) {
+                            alert(`刪除失敗: ${error.message}`);
+                        }
+                    }
+                });
+            });
+
+        } else {
+            container.innerHTML = '<p class="text-gray-400 mt-4">這位病患沒有任何預約紀錄。</p>';
+        }
+    }
+
+    async function loadAndRenderRecords(patientId, patientName) {
+        const recordsContent = document.getElementById('records-content');
+        recordsContent.innerHTML = '<p>正在載入紀錄...</p>';
+        document.getElementById('records-patient-name').textContent = patientName;
+        try {
+            const prescriptions = await apiRequest(`/patients/${patientId}/prescriptions`);
+            if (prescriptions && prescriptions.length > 0) {
+                recordsContent.innerHTML = prescriptions.map(p => `
+                    <div class="p-4 border rounded-lg bg-gray-50 relative">
+                        <p class="text-sm text-gray-500"><strong>開立時間:</strong> ${formatDateTime(p.created_at)}</p>
+                        <p><strong>藥品名稱:</strong> ${p.medication_name}</p>
+                        <p><strong>劑量:</strong> ${p.dosage}</p>
+                        <p><strong>頻率:</strong> ${p.frequency}</p>
+                        <button data-prescription-id="${p.id}" data-patient-id="${patientId}" class="delete-prescription-btn absolute top-2 right-2 bg-red-100 text-red-600 hover:bg-red-200 p-1 rounded-full">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                `).join('');
+                document.querySelectorAll('.delete-prescription-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const { prescriptionId, patientId } = e.currentTarget.dataset;
+                        if (window.confirm('您確定要刪除此筆處方紀錄嗎？')) {
+                            try {
+                                await apiRequest(`/prescriptions/${prescriptionId}`, 'DELETE');
+                                loadAndRenderRecords(patientId, patientName);
+                            } catch (error) {
+                                alert(`刪除失敗: ${error.message}`);
+                            }
+                        }
+                    });
+                });
+            } else {
+                recordsContent.innerHTML = '<p class="text-gray-500">這位病患沒有任何處方紀錄。</p>';
+            }
+        } catch (error) {
+            recordsContent.innerHTML = `<p class="text-red-500">載入失敗: ${error.message}</p>`;
+        }
+    }
+    
+    function showWelcomeView() {
+        chartView.classList.add('hidden');
+        chartView.classList.remove('grid');
+        welcomeView.classList.remove('hidden');
+    }
+
+    async function refreshData() {
+        try {
+            const [patients, appointments] = await Promise.all([
+                apiRequest('/doctors/me/patients'), 
+                apiRequest('/doctors/me/appointments')
+            ]);
+            
+            allPatients = patients;
+            allAppointments = appointments;
+            
+            renderPatientSidebar(patients);
+
+            if (currentPatientForActions) {
+                const updatedPatientProfile = allPatients.find(p => p.id === currentPatientForActions.id);
+                if (updatedPatientProfile) {
+                    showChartView(updatedPatientProfile);
+                    const activeSidebarItem = sidebarMenu.querySelector(`.sidebar-item[data-index='${allPatients.findIndex(p => p.id === updatedPatientProfile.id)}']`);
+                    if(activeSidebarItem) {
+                        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                        activeSidebarItem.classList.add('active');
+                    }
+                } else {
+                    currentPatientForActions = null;
+                    showWelcomeView();
+                }
+            }
+
+        } catch (error) {
+            console.error("刷新資料失敗:", error);
+        }
+    }
+
+    async function showMainApp() {
+        try {
+            const doctorProfile = await apiRequest('/doctors/me');
+            currentDoctorProfile = doctorProfile;
+            authContainer.innerHTML = '';
+            authContainer.classList.add('hidden');
+            mainAppView.classList.remove('hidden');
+            showWelcomeView();
+            doctorNameDisplay.textContent = `你好, ${doctorProfile.name} 醫師`;
+            await refreshData();
+        } catch (error) {
+            logout();
+        }
+    }
+
+    function showAuth() {
+        authContainer.classList.remove('hidden');
+        mainAppView.classList.add('hidden');
+        const authTemplate = document.getElementById('auth-template');
+        authContainer.innerHTML = authTemplate.innerHTML;
+        initializeAuthEventListeners();
+    }
+
+    function logout() {
+        localStorage.removeItem('authToken');
+        currentPatientForActions = null;
+        showAuth();
+    }
+    
+    function initializeAuthEventListeners() {
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const goToRegisterLink = document.getElementById('go-to-register');
+        const goToLoginLink = document.getElementById('go-to-login');
+
+        goToRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('register-view').classList.remove('hidden');
+        });
+        goToLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('register-view').classList.add('hidden');
+            document.getElementById('login-view').classList.remove('hidden');
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const loginErrorMessage = document.getElementById('login-error-message');
+            loginErrorMessage.textContent = '登入中...';
+            try {
+                const credentials = {
+                    username: e.target.elements['login-username'].value,
+                    password: e.target.elements['login-password'].value
+                };
+                const response = await apiRequest('/token', 'POST', credentials);
+                localStorage.setItem('authToken', response.access_token);
+                await showMainApp();
+            } catch (error) {
+                loginErrorMessage.textContent = `錯誤: ${error.message}`;
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const registerMessage = document.getElementById('register-message');
+            registerMessage.textContent = '註冊中...';
+            const doctorData = {
+                name: document.getElementById('register-name').value,
+                specialty: document.getElementById('register-specialty').value,
+                credentials: {
+                    username: document.getElementById('register-username').value,
+                    password: document.getElementById('register-password').value
+                }
+            };
+            try {
+                await apiRequest('/doctors/', 'POST', doctorData);
+                registerMessage.textContent = `註冊成功！請返回登入。`;
+                registerMessage.className = 'mt-4 text-center text-green-500';
+                registerForm.reset();
+            } catch (error) {
+                registerMessage.textContent = `錯誤: ${error.message}`;
+                registerMessage.className = 'mt-4 text-center text-red-500';
+            }
+        });
+    }
+
+    function toggleRecording() {
+        isRecording ? stopRecording() : startRecording();
+    }
+
+    async function startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            isRecording = true;
+            audioChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+            mediaRecorder.onstop = uploadAndTranscribeAudio; // [修改] 停止錄音後只進行轉錄
+            mediaRecorder.start();
+            const btn = document.getElementById('start-recording-btn');
+            btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+            btn.classList.add('bg-red-500', 'hover:bg-red-600');
+            recordingSeconds = 0;
+            btn.textContent = `停止錄音 (0s)`;
+            recordingTimerInterval = setInterval(() => {
+                recordingSeconds++;
+                btn.textContent = `停止錄音 (${recordingSeconds}s)`;
+            }, 1000);
+            document.getElementById('transcript-area').value = '錄音中...';
+            document.getElementById('summary-textarea').value = '';
+        } catch (error) {
+            console.error("無法取得麥克風權限:", error);
+            alert("無法取得麥克風權限，請檢查您的瀏覽器設定。");
+        }
+    }
+
+    function stopRecording() {
+        if (!isRecording || !mediaRecorder) return;
+        mediaRecorder.stop();
+        isRecording = false;
+        clearInterval(recordingTimerInterval);
+        recordingSeconds = 0;
+        const btn = document.getElementById('start-recording-btn');
+        btn.textContent = '開始錄音';
+        btn.classList.remove('bg-red-500', 'hover:bg-red-600');
+        btn.classList.add('bg-green-500', 'hover:bg-green-600');
+        if (mediaRecorder.stream) {
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+    // [修改] 將摘要功能分離出來
+    async function uploadAndTranscribeAudio() {
+        const transcriptArea = document.getElementById('transcript-area');
+        transcriptArea.value = '語音轉文字中，請稍候...';
+        
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append("file", audioBlob, "recording.webm");
+
+        try {
+            const transcribeResult = await apiRequest('/transcribe', 'POST', formData);
+            transcriptArea.value = transcribeResult.transcript;
+        } catch (error) {
+            transcriptArea.value = `處理失敗: ${error.message}`;
+        }
+    }
+
+    // --- [新增] ---
+    // 為「生成摘要」按鈕添加事件監聽器
+    document.getElementById('generate-summary-btn').addEventListener('click', async () => {
+        const transcriptArea = document.getElementById('transcript-area');
+        const summaryTextarea = document.getElementById('summary-textarea');
+        const transcriptText = transcriptArea.value.trim();
+
+        if (!transcriptText) {
+            alert('逐字稿內容不可為空！');
+            return;
+        }
+
+        summaryTextarea.value = '正在生成摘要...';
+        try {
+            const summarizeResult = await apiRequest('/summarize', 'POST', { text: transcriptText });
+            summaryTextarea.value = summarizeResult.summary;
+        } catch (error) {
+            summaryTextarea.value = `無法生成摘要: ${error.message}`;
+        }
+    });
+
+
+    logoutButton.addEventListener('click', logout);
+
+    addAppointmentBtn.addEventListener('click', async () => {
+        addAppointmentForm.reset();
+        document.getElementById('add-appointment-message').textContent = '';
+        const patientSelect = document.getElementById('patient-select');
+        patientSelect.innerHTML = '<option value="">載入中...</option>';
+        openModal(addAppointmentModal);
+        try {
+            const patients = await apiRequest('/patients/');
+            if (patients && patients.length > 0) {
+                patientSelect.innerHTML = patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            } else {
+                patientSelect.innerHTML = '<option value="">沒有可選擇的病患</option>';
+            }
+        } catch (error) {
+            patientSelect.innerHTML = `<option value="">載入失敗</option>`;
+        }
+    });
+
+    addAppointmentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageEl = document.getElementById('add-appointment-message');
+        messageEl.textContent = '新增中...';
+        const appointmentData = {
+            patient_id: parseInt(document.getElementById('patient-select').value),
+            doctor_id: currentDoctorProfile.id,
+            appointment_date: document.getElementById('appointment-date').value,
+            reason: document.getElementById('appointment-reason').value
+        };
+        try {
+            await apiRequest('/appointments/', 'POST', appointmentData);
+            messageEl.textContent = '預約已成功新增！';
+            messageEl.className = 'mt-4 text-center text-green-500';
+            setTimeout(() => {
+                closeModal();
+                refreshData();
+            }, 1500);
+        } catch (error) {
+            messageEl.textContent = `錯誤: ${error.message}`;
+            messageEl.className = 'mt-4 text-center text-red-500';
+        }
+    });
+
+    prescribeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageEl = document.getElementById('prescribe-message');
+        messageEl.textContent = '送出中...';
+        const prescriptionData = {
+            patient_id: parseInt(document.getElementById('prescribe-patient-id').value),
+            appointment_id: parseInt(document.getElementById('prescribe-appointment-id').value),
+            medication_name: document.getElementById('medication-name').value,
+            dosage: document.getElementById('dosage').value,
+            frequency: document.getElementById('frequency').value
+        };
+        try {
+            await apiRequest('/prescriptions/', 'POST', prescriptionData);
+            messageEl.textContent = '處方已成功開立！';
+            messageEl.className = 'mt-4 text-center text-green-500';
+            setTimeout(closeModal, 1500);
+        } catch (error) {
+            messageEl.textContent = `錯誤: ${error.message}`;
+            messageEl.className = 'mt-4 text-center text-red-500';
+        }
+    });
+
+    modalContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-overlay') || e.target.closest('.close-modal-btn')) {
+            closeModal();
+        }
+    });
+
+    function init() {
+        if (localStorage.getItem('authToken')) {
+            showMainApp();
+        } else {
+            showAuth();
+        }
+    }
+    
+    init();
+});
+</script>
+</body>
+</html>
