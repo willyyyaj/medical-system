@@ -15,7 +15,8 @@ import os
 import google.generativeai as genai
 
 # --- Whisper ASR 模型相關匯入 ---
-
+# 註釋掉 whisper 相關程式碼
+# import whisper
 
 # --- JWT & 密碼處理相關匯入 ---
 from jose import JWTError, jwt
@@ -43,9 +44,6 @@ except Exception as e:
     gemini_model = None
     logging.error(f"無法設定 Google Gemini AI SDK: {e}")
 
-
-# --- 載入 Whisper 模型 ---
-
 # --------------------------------------------------------------------------
 # 1. 認證與安全設定
 # --------------------------------------------------------------------------
@@ -58,10 +56,19 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # --------------------------------------------------------------------------
 # 2. 資料庫設定
 # --------------------------------------------------------------------------
-SQLALCHEMY_DATABASE_URL = "sqlite:///./medical_system_final_v2.db"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+# 修改這一段，以支援 PostgreSQL 或 SQLite
+SQLALCHEMY_DATABASE_URL = os.environ.get("postgresql://fastandambitious_user:qDEcCZjTreoP7NQCCsycwQkkb8DCzQ2M@dpg-d2k03bm3jp1c73fkijm0-a/fastandambitious")
+
+if SQLALCHEMY_DATABASE_URL:
+    # 在 Render 上使用 PostgreSQL
+    logging.info("正在使用環境變數中的 PostgreSQL 資料庫。")
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+else:
+    # 在本地開發時使用 SQLite
+    logging.warning("DATABASE_URL 環境變數未設定，正在使用本地 SQLite。")
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./medical_system_final_v2.db"
+    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -104,7 +111,7 @@ class AppointmentDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     appointment_date = Column(String)
     reason = Column(String)
-    summary = Column(Text, nullable=True) 
+    summary = Column(Text, nullable=True)  
     patient_id = Column(Integer, ForeignKey("patients.id"))
     doctor_id = Column(Integer, ForeignKey("doctors.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -332,7 +339,6 @@ origins = [
     "http://127.0.0.1:8888",
     "http://127.0.0.1:8889",
     "null"
-     "https://jovial-swan-576e90.netlify.app"
 ]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 Base.metadata.create_all(bind=engine, checkfirst=True)
@@ -385,6 +391,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
         raise HTTPException(status_code=401, detail="不正確的帳號或密碼")
     access_token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 
 @app.post("/summarize", tags=["AI"])
