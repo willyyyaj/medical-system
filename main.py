@@ -340,6 +340,7 @@ origins = [
     "http://127.0.0.1:8889",
     "null",  # <--- 在這裡加上逗號
     "https://jovial-swan-576e90.netlify.app",
+    "https://fast8ambitious.netlify.app", 
     "https://medical-system-ht13.onrender.com"
 ]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
