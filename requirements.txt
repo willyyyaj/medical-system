@@ -5,6 +5,6 @@ gunicorn
 SQLAlchemy
 python-jose[cryptography]
 passlib[bcrypt]
-# openai-whisper
+openai-whisper
 google-generativeai
 python-multipart
