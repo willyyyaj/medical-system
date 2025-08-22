@@ -14,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 複製所有專案檔案到工作目錄
 COPY . .
 
-# 開放容器的 8000 連接埠
-EXPOSE 8000
+# 開放容器的 10000 連接埠
+EXPOSE 10000
 
 # 容器啟動時要執行的指令
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
