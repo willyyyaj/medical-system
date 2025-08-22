@@ -15,7 +15,7 @@ import os
 import google.generativeai as genai
 
 # --- Whisper ASR 模型相關匯入 ---
-import whisper
+
 
 # --- JWT & 密碼處理相關匯入 ---
 from jose import JWTError, jwt
@@ -45,13 +45,7 @@ except Exception as e:
 
 
 # --- 載入 Whisper 模型 ---
-try:
-    # 將模型名稱改為 'tiny'
-    whisper_model = whisper.load_model("tiny")
-    logging.info("Whisper 'tiny' model loaded successfully.")
-except Exception as e:
-    whisper_model = None
-    logging.error(f"Could not load Whisper model: {e}. Please ensure ffmpeg is installed.")
+
 # --------------------------------------------------------------------------
 # 1. 認證與安全設定
 # --------------------------------------------------------------------------
@@ -391,30 +385,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     access_token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/transcribe", tags=["ASR"])
-async def transcribe_audio(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
-    if whisper_model is None:
-        raise HTTPException(status_code=500, detail="Whisper 模型未能成功載入，請檢查伺服器日誌。")
-    if current_user.role != "Doctor":
-        raise HTTPException(status_code=403, detail="權限不足")
-
-    temp_dir = "/tmp"
-    os.makedirs(temp_dir, exist_ok=True)
-    temp_file_path = os.path.join(temp_dir, file.filename)
-    
-    with open(temp_file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    try:
-        result = whisper_model.transcribe(temp_file_path, language="zh")
-        logging.info(f"Transcription successful for user {current_user.username}")
-        return {"transcript": result["text"]}
-    except Exception as e:
-        logging.error(f"Transcription failed: {e}")
-        raise HTTPException(status_code=500, detail=f"語音轉文字失敗: {e}")
-    finally:
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
 
 @app.post("/summarize", tags=["AI"])
 async def summarize_text(transcript_data: TranscriptData, current_user: User = Depends(get_current_user)):
