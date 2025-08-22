@@ -333,13 +333,16 @@ manager = ConnectionManager()
 # --------------------------------------------------------------------------
 app = FastAPI(title="智慧醫療資訊系統 API (V2 - 修正版)")
 origins = [
+    origins = [
     "http://localhost",
     "http://localhost:8888",
     "http://localhost:8889",
     "http://127.0.0.1:8888",
     "http://127.0.0.1:8889",
-    "null"
-    "https://jovial-swan-576e90.netlify.app" 
+    "null",
+    "https://jovial-swan-576e90.netlify.app",         # Your Netlify frontend
+    "https://medical-system-ht13.onrender.com"      # Your Render backend
+]
 ]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 Base.metadata.create_all(bind=engine, checkfirst=True)
