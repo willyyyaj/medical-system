@@ -339,6 +339,7 @@ origins = [
     "http://127.0.0.1:8888",
     "http://127.0.0.1:8889",
     "null"
+    "https://jovial-swan-576e90.netlify.app" 
 ]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 Base.metadata.create_all(bind=engine, checkfirst=True)
