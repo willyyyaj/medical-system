@@ -57,7 +57,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # 2. 資料庫設定
 # --------------------------------------------------------------------------
 # 修改這一段，以支援 PostgreSQL 或 SQLite
-SQLALCHEMY_DATABASE_URL = os.environ.get("postgresql://fastandambitious_user:qDEcCZjTreoP7NQCCsycwQkkb8DCzQ2M@dpg-d2k03bm3jp1c73fkijm0-a/fastandambitious")
+SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if SQLALCHEMY_DATABASE_URL:
     # 在 Render 上使用 PostgreSQL
