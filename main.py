@@ -46,12 +46,12 @@ except Exception as e:
 
 # --- 載入 Whisper 模型 ---
 try:
-    whisper_model = whisper.load_model("base")
-    logging.info("Whisper 'base' model loaded successfully.")
+    # 將模型名稱改為 'tiny'
+    whisper_model = whisper.load_model("tiny")
+    logging.info("Whisper 'tiny' model loaded successfully.")
 except Exception as e:
     whisper_model = None
     logging.error(f"Could not load Whisper model: {e}. Please ensure ffmpeg is installed.")
-
 # --------------------------------------------------------------------------
 # 1. 認證與安全設定
 # --------------------------------------------------------------------------
