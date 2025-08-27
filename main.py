@@ -21,8 +21,7 @@ from datetime import datetime, timedelta
 
 # --- SQLAlchemy 相關匯入 ---
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Boolean, Text, DateTime
-from sqlalchemy.orm import sessionmaker, Session, declarative_base, relationship, backref, joinedload
-
+from sqlalchemy.orm import sessionmaker, Session, declarative_base, relationship, backref, joinedload, selectinload
 # --------------------------------------------------------------------------
 # 0. 設定日誌 (Logging)
 # --------------------------------------------------------------------------
@@ -551,11 +550,12 @@ def read_doctor_appointments(current_user: User = Depends(get_current_user), db:
     if not doctor_profile:
         raise HTTPException(status_code=404, detail="找不到對應的醫生資料")
 
-    # 【最終修正版】
-    # 這次我們同時預先載入 patient 和 tasks 兩個關聯資料，徹底解決問題
+    # 【最終修正版 v2】
+    # 使用 joinedload 載入 ...-to-one (patient)
+    # 使用 selectinload 載入 one-to-many (tasks)，避免笛卡爾積錯誤
     appointments = db.query(AppointmentDB).options(
         joinedload(AppointmentDB.patient),
-        joinedload(AppointmentDB.tasks)  # <--- 新增這一行來載入任務
+        selectinload(AppointmentDB.tasks)  # <--- 將 tasks 的載入方式改為 selectinload
     ).filter(AppointmentDB.doctor_id == doctor_profile.id).order_by(AppointmentDB.appointment_date.desc()).all()
     
     return appointments
