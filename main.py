@@ -54,10 +54,19 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # --------------------------------------------------------------------------
 SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL")
 
-if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
-    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
-    logging.info("正在使用環境變數中的 PostgreSQL 資料庫 (psycopg driver)。")
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+# 判斷是否為 PostgreSQL URL (同時相容 'postgres://' 和 'postgresql://')
+if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres"):
+    db_url = SQLALCHEMY_DATABASE_URL
+    
+    # 為了讓 SQLAlchemy 正確識別 driver，我們需要將 URL 轉換為 'postgresql+psycopg://'
+    # 這個寫法可以同時處理 'postgres://' 和 'postgresql://'
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    elif db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
+
+    logging.info("正在使用環境變數中的 PostgreSQL 資料庫。")
+    engine = create_engine(db_url)
 else:
     logging.warning("DATABASE_URL 環境變數未設定或格式不符，正在使用本地 SQLite。")
     SQLALCHEMY_DATABASE_URL = "sqlite:///./medical_system_final_v2.db"
