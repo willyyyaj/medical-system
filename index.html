@@ -5,23 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>病患儀表板 - 智慧醫療系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .main-view { height: calc(100vh - 68px); }
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
-        .sidebar-item { cursor: pointer; transition: background-color 0.2s ease-in-out; }
-        .sidebar-item.active { background-color: #eef2ff; border-right: 4px solid #4f46e5; }
+        .sidebar-item { 
+            cursor: pointer; 
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; 
+        }
+        .sidebar-item.active { 
+            background-color: #eef2ff; 
+            color: #4f46e5;
+            border-right: 4px solid #4f46e5; 
+            font-weight: 600;
+        }
+        .submenu-item {
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .submenu-item.active {
+            background-color: #f0f0f0;
+            font-weight: 500;
+        }
+        .summary-section { transition: all 0.3s ease; }
+        .summary-section:hover { background-color: #fafafa; }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-content.open {
+            max-height: 1500px;
+        }
+        .accordion-arrow {
+            transition: transform 0.3s ease-out;
+        }
+        .accordion-header.open .accordion-arrow {
+            transform: rotate(180deg);
+        }
+        #summaries-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        #summaries-submenu.open {
+            max-height: 500px; 
+        }
+        #nav-summaries.open .accordion-arrow {
+            transform: rotate(180deg);
+        }
+        .modal-overlay { transition: opacity 0.3s ease; }
+        .modal-container { transition: transform 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
-    <!-- 登入/註冊 Template -->
+
     <template id="auth-template">
         <div class="min-h-screen flex items-center justify-center">
             <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-                <!-- 登入畫面 -->
                 <div id="login-view">
                     <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">病患登入</h2>
                     <form id="login-form">
@@ -38,21 +81,36 @@
                     </form>
                     <p class="mt-4 text-center text-sm">還沒有帳號嗎？ <a href="#" id="go-to-register" class="text-indigo-600 hover:underline">點此註冊</a></p>
                 </div>
-                <!-- 註冊畫面 -->
                 <div id="register-view" class="hidden">
-                    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">註冊新帳號</h2>
+                    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">註冊病患帳號</h2>
                     <form id="register-form">
-                        <div class="grid grid-cols-2 gap-4">
-                            <input type="text" id="register-name" placeholder="姓名" class="shadow border rounded w-full py-2 px-3" required>
-                            <input type="date" id="register-birthdate" class="shadow border rounded w-full py-2 px-3" required>
-                            <select id="register-gender" class="shadow border rounded w-full py-2 px-3" required>
-                                <option value="Male">男性</option>
-                                <option value="Female">女性</option>
-                            </select>
+                        <div class="mb-4">
+                            <label for="register-name" class="block text-gray-700 text-sm font-bold mb-2">姓名</label>
+                            <input type="text" id="register-name" class="shadow border rounded w-full py-2 px-3" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="register-birthdate" class="block text-gray-700 text-sm font-bold mb-2">出生年月日</label>
+                                <input type="date" id="register-birthdate" class="shadow border rounded w-full py-2 px-3" required>
+                            </div>
+                            <div>
+                                <label for="register-gender" class="block text-gray-700 text-sm font-bold mb-2">性別</label>
+                                <select id="register-gender" class="shadow border rounded w-full py-2 px-3" required>
+                                    <option value="男性">男性</option>
+                                    <option value="女性">女性</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
                         </div>
                         <hr class="my-4">
-                        <input type="text" id="register-username" placeholder="設定帳號" class="shadow border rounded w-full py-2 px-3 mb-4" required>
-                        <input type="password" id="register-password" placeholder="設定密碼" class="shadow border rounded w-full py-2 px-3 mb-4" required>
+                        <div class="mb-4">
+                            <label for="register-username" class="block text-gray-700 text-sm font-bold mb-2">設定帳號</label>
+                            <input type="text" id="register-username" class="shadow border rounded w-full py-2 px-3" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="register-password" class="block text-gray-700 text-sm font-bold mb-2">設定密碼</label>
+                            <input type="password" id="register-password" class="shadow border rounded w-full py-2 px-3" required>
+                        </div>
                         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">註冊</button>
                         <p id="register-message" class="mt-4 text-center text-xs"></p>
                     </form>
@@ -62,60 +120,160 @@
         </div>
     </template>
 
-    <!-- 登入畫面容器 -->
     <div id="auth-container"></div>
 
-    <!-- 主應用程式畫面 -->
     <div id="main-app-view" class="hidden">
         <header class="bg-white shadow-md">
             <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
                 <h1 class="text-xl font-bold text-indigo-600">病患個人中心</h1>
-                <div class="flex items-center">
-                    <p id="patient-name-display" class="text-gray-700 mr-4"></p>
+                <div>
+                    <span id="patient-name-display" class="text-gray-700 mr-4"></span>
                     <button id="logout-button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">登出</button>
                 </div>
             </nav>
         </header>
         
         <div class="main-view flex">
-            <!-- 左側選單 -->
-            <aside class="w-1/4 bg-white border-r flex flex-col">
-                <div class="p-4 border-b">
-                    <h2 class="text-lg font-bold text-gray-800">我的摘要</h2>
-                </div>
-                <nav id="sidebar-menu" class="flex-grow custom-scrollbar overflow-y-auto"></nav>
-                <div class="p-4 border-t">
-                    <button id="show-prescriptions-btn" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">查看所有處方</button>
-                </div>
+            <aside class="w-1/4 bg-white border-r flex flex-col custom-scrollbar overflow-y-auto">
+                <nav id="sidebar-menu" class="flex-grow pt-4">
+                    <div>
+                        <div id="nav-summaries" class="sidebar-item p-4 text-gray-700 flex items-center justify-between">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                <span>我的摘要</span>
+                            </div>
+                            <svg class="accordion-arrow w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div id="summaries-submenu" class="pl-4"></div>
+                    </div>
+                    <div id="nav-tasks" class="sidebar-item p-4 text-gray-700 flex items-center">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        與醫師的討論事項
+                    </div>
+                </nav>
             </aside>
-
-            <!-- 右側主內容區 -->
-            <div id="main-content-area" class="w-3/4 p-6 custom-scrollbar overflow-y-auto">
-                <!-- 內容將由 JS 動態插入 -->
-            </div>
+            <main id="main-content-area" class="w-3/4 p-6 custom-scrollbar overflow-y-auto">
+            </main>
         </div>
     </div>
-
-    <!-- 通知 Toast -->
-    <div id="notification-toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-3 px-6 rounded-lg shadow-lg hidden">
+    
+    <div id="notification-toast" class="fixed bottom-5 right-5 bg-indigo-600 text-white py-3 px-6 rounded-lg shadow-lg hidden opacity-0 transition-opacity duration-300">
         <p id="notification-message"></p>
     </div>
 
+    <div id="modal-container"></div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const baseURL = 'http://localhost:8000';
+    // --- 常數與狀態變數 ---
+    let baseURL;
+    const hostname = window.location.hostname;
+
+    if (hostname === "127.0.0.1" || hostname === "localhost") {
+        baseURL = "http://127.0.0.1:8000";
+    } else {
+        baseURL = "https://medical-system-ht13.onrender.com";
+    }
+
+    // --- DOM 元素參考 ---
     const authContainer = document.getElementById('auth-container');
     const mainAppView = document.getElementById('main-app-view');
     const patientNameDisplay = document.getElementById('patient-name-display');
     const logoutButton = document.getElementById('logout-button');
+    const mainContentArea = document.getElementById('main-content-area');
+    const navSummaries = document.getElementById('nav-summaries');
+    const navTasks = document.getElementById('nav-tasks');
+    const summariesSubmenu = document.getElementById('summaries-submenu');
     const notificationToast = document.getElementById('notification-toast');
     const notificationMessage = document.getElementById('notification-message');
-    const sidebarMenu = document.getElementById('sidebar-menu');
-    const mainContentArea = document.getElementById('main-content-area');
+    const modalContainer = document.getElementById('modal-container');
 
-    let websocket = null;
-    let currentPatientProfile = null;
+    // --- 應用程式狀態 ---
     let allAppointments = [];
+    let allPrescriptions = [];
+    let allTasks = [];
+    let patientProfile = null;
+    let websocket = null;
+    let currentView = 'summaries';
+
+
+    // --- API 輔助函式 (已優化 401 錯誤處理) ---
+    async function apiRequest(endpoint, method = 'GET', body = null) {
+        const token = localStorage.getItem('authToken');
+        const headers = {};
+        if (!(body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        const config = { method, headers };
+        if (body) {
+            if (endpoint === '/token') {
+                headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                config.body = new URLSearchParams(body);
+            } else {
+                config.body = JSON.stringify(body);
+            }
+        }
+        try {
+            const response = await fetch(`${baseURL}${endpoint}`, config);
+
+            if (response.status === 401) {
+                console.warn("偵測到 401 未授權錯誤，將自動登出。");
+                logout(); 
+                throw new Error("您的登入已逾時，請重新登入。");
+            }
+
+            if (!response.ok && response.status !== 204) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `請求失敗 (狀態碼: ${response.status})`);
+            }
+            return response.status === 204 ? null : await response.json();
+        } catch (error) {
+            if (error.message.includes("登入已逾時")) {
+                console.error("API 請求被中斷，因為權杖無效已觸發自動登出。");
+            } else {
+                console.error(`API 錯誤 on ${method} ${endpoint}:`, error);
+            }
+            throw error;
+        }
+    }
+
+    // --- 工具函式 ---
+    function formatDateTime(dateInput) {
+        if (!dateInput) return '無';
+        
+        let formattedDateInput = dateInput;
+        if (typeof dateInput === 'string' && dateInput.includes(' ') && !dateInput.includes('T')) {
+             formattedDateInput = dateInput.replace(' ', 'T') + 'Z';
+        } else if (typeof dateInput === 'string' && !dateInput.endsWith('Z')) {
+             formattedDateInput = dateInput + 'Z';
+        }
+        
+        const date = new Date(formattedDateInput);
+
+        if (isNaN(date.getTime())) return '無效日期';
+        
+        return date.toLocaleString('zh-TW', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false
+        });
+    }
+    
+    function showNotification(message) {
+        notificationMessage.textContent = message;
+        notificationToast.classList.remove('hidden');
+        setTimeout(() => { notificationToast.classList.remove('opacity-0'); }, 10);
+        setTimeout(() => {
+            notificationToast.classList.add('opacity-0');
+            setTimeout(() => { notificationToast.classList.add('hidden'); }, 300);
+        }, 5000);
+    }
 
     function connectWebSocket(userId) {
         if (websocket && websocket.readyState === WebSocket.OPEN) return;
@@ -123,223 +281,578 @@ document.addEventListener('DOMContentLoaded', () => {
         websocket = new WebSocket(`${wsURL}/ws/${userId}`);
         websocket.onopen = () => console.log(`WebSocket 連線成功 (User ID: ${userId})！`);
         
-        // --- [修改] ---
-        // 新增對 'new_summary' 通知的處理邏輯
-        websocket.onmessage = (event) => {
+        websocket.onmessage = async (event) => {
             const message = JSON.parse(event.data);
-            if (message.type === 'new_prescription') {
-                showNotification(`${message.data.doctor_name} 醫師為您開立了新的處方`);
-            } else if (message.type === 'new_summary') {
-                showNotification(`${message.data.doctor_name} 醫師已更新您 ${formatDateTime(message.data.appointment_date)} 的看診摘要`);
-                // 可選：自動刷新資料讓使用者看到最新摘要
-                // showMainApp(); 
+            if (message.type === 'new_summary' || message.type === 'new_prescription') {
+                showNotification(`醫師更新了您的就診資料，頁面將自動刷新...`);
+                await refreshData();
             }
         };
         websocket.onclose = () => console.log("WebSocket 連線已關閉。");
     }
 
-    function showNotification(message) {
-        notificationMessage.textContent = message;
-        notificationToast.classList.remove('hidden');
-        setTimeout(() => notificationToast.classList.add('hidden'), 5000);
-    }
+    // --- Modal 管理 ---
+    function openModal(modalHTML) {
+        modalContainer.innerHTML = modalHTML;
+        const modalElement = modalContainer.querySelector('.modal-overlay');
+        if (!modalElement) return;
 
-    async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
-        const headers = { 'Content-Type': 'application/json' };
-        const authToken = token || localStorage.getItem('authToken');
-        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-        
-        const config = { method, headers };
-        if (body) {
-            if (endpoint === '/token') {
-                config.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-                config.body = new URLSearchParams(body);
-            } else {
-                config.body = JSON.stringify(body);
+        modalElement.classList.remove('hidden');
+        setTimeout(() => {
+            modalElement.classList.remove('opacity-0');
+            const container = modalElement.querySelector('.modal-container');
+            if (container) container.classList.remove('scale-95');
+        }, 10);
+
+        modalElement.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay') || e.target.closest('.close-modal-btn')) {
+                closeModal();
             }
+        });
+    }
+
+    function closeModal() {
+        const modalElement = modalContainer.querySelector('.modal-overlay:not(.hidden)');
+        if (modalElement) {
+            modalElement.classList.add('opacity-0');
+            const container = modalElement.querySelector('.modal-container');
+            if (container) container.classList.add('scale-95');
+            setTimeout(() => {
+                modalElement.classList.add('hidden');
+                modalContainer.innerHTML = '';
+            }, 300);
         }
-        
-        try {
-            const response = await fetch(`${baseURL}${endpoint}`, config);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || `請求失敗`);
+    }
+
+    // --- UI 渲染 ---
+    function createSummaryHTML(rawText) {
+        if (!rawText || !rawText.trim()) {
+            return `<p class="text-gray-500">醫生尚未提供此次看診的摘要。</p>`;
+        }
+        let text = rawText.replace(/\*\*/g, '').trim();
+        const sectionHeaders = [
+            "您今天提到的主要問題",
+            "我的觀察與診斷",
+            "接下來的治療計畫與建議",
+            "請注意這些情況"
+        ];
+        const sections = [];
+        let lastIndex = 0;
+        sectionHeaders.forEach((header, i) => {
+            const headerIndex = text.indexOf(header);
+            if(headerIndex !== -1) {
+                if (i > 0 && sections[i-1]) {
+                   sections[i-1].content = text.substring(sections[i-1].endIndex, headerIndex).trim();
+                }
+                sections.push({ title: header, startIndex: headerIndex, endIndex: headerIndex + header.length });
             }
-            return response.status === 204 ? null : await response.json();
-        } catch (error) {
-            console.error(`API 錯誤 on ${method} ${endpoint}:`, error);
-            throw error;
+        });
+        if (sections.length > 0) {
+            sections[sections.length - 1].content = text.substring(sections[sections.length - 1].endIndex).trim();
+        } else {
+            return `<div class="whitespace-pre-wrap">${text}</div>`;
         }
+        return sections.map(section => {
+            if (!section.content) return '';
+            return `<div class="summary-section p-3 rounded-md"><h4 class="font-semibold text-indigo-700 text-base flex items-center">${section.title}</h4><div class="mt-2 text-gray-700 pl-4 border-l-2 border-indigo-100 whitespace-pre-wrap">${section.content.replace(/^[:：\s]*/, '')}</div></div>`;
+        }).join('');
     }
 
-    function formatDateTime(isoString) {
-        if (!isoString) return '無';
-        const date = new Date(isoString.includes('Z') ? isoString : isoString + 'Z');
-        return date.toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-    }
-
-    function renderSidebarMenu(appointments) {
-        allAppointments = appointments;
-        if (!appointments || appointments.length === 0) {
-            sidebarMenu.innerHTML = '<p class="p-4 text-center text-gray-500 text-sm">目前沒有任何看診紀錄。</p>';
-            mainContentArea.innerHTML = `<div class="h-full flex items-center justify-center"><p class="text-gray-500 text-xl">目前沒有看診紀錄</p></div>`;
+    function renderSummariesSidebar() {
+        if (!allAppointments || allAppointments.length === 0) {
+            summariesSubmenu.innerHTML = '<p class="p-4 text-xs text-gray-500">無摘要紀錄</p>';
             return;
         }
-        const sortedAppointments = appointments.sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date));
-        sidebarMenu.innerHTML = sortedAppointments.map((appt) => `
-            <div data-id="${appt.id}" class="sidebar-item p-4 border-b last:border-b-0">
-                <p class="font-semibold text-gray-800">${formatDateTime(appt.appointment_date)}</p>
-                <p class="text-sm text-gray-500">${appt.doctor.name} 醫師</p>
-            </div>
-        `).join('');
-        
-        document.querySelectorAll('.sidebar-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-                const currentItem = e.currentTarget;
-                currentItem.classList.add('active');
-                const appointmentId = currentItem.dataset.id;
-                const selectedAppointment = allAppointments.find(a => a.id == appointmentId);
-                if (selectedAppointment) {
-                    renderSummaryView(selectedAppointment);
-                }
-            });
-        });
-
-        if (sortedAppointments.length > 0) {
-            sidebarMenu.querySelector('.sidebar-item').click();
-        }
-    }
-
-    async function renderSummaryView(appointment) {
-        mainContentArea.innerHTML = `<div class="p-6 text-center">正在載入摘要...</div>`;
-        
-        try {
-            const [summaryData, allPrescriptions] = await Promise.all([
-                apiRequest(`/appointments/${appointment.id}/summary`),
-                apiRequest('/patients/me/prescriptions')
-            ]);
-
-            const appointmentPrescriptions = allPrescriptions.filter(p => p.appointment_id === appointment.id);
-            let prescriptionsHTML = '<p class="text-gray-500">本次看診無開立處方紀錄。</p>';
-            if (appointmentPrescriptions.length > 0) {
-                prescriptionsHTML = appointmentPrescriptions.map(p => `
-                    <div class="border rounded-lg p-4 bg-gray-50">
-                        <p class="text-sm text-gray-500"><strong>開立時間:</strong> ${formatDateTime(p.created_at)}</p>
-                        <p><strong>藥品名稱:</strong> ${p.medication_name}</p>
-                        <p><strong>劑量:</strong> ${p.dosage}</p>
-                        <p><strong>頻率:</strong> ${p.frequency}</p>
-                    </div>
-                `).join('');
+        const sortedAppointments = allAppointments.sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date));
+        summariesSubmenu.innerHTML = sortedAppointments.map(appt => {
+            const isWalkIn = appt.appointment_type === 'walk-in';
+            
+            let typeTag = '';
+            if (isWalkIn) {
+                typeTag = '<span class="ml-2 text-xs font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full">現場掛號</span>';
+            } else {
+                typeTag = '<span class="ml-2 text-xs font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">預約回診</span>';
             }
 
-            mainContentArea.innerHTML = `
-                <div class="space-y-6">
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">看診摘要</h2>
-                        <p class="text-gray-600 mb-4"><strong>主治醫師:</strong> ${appointment.doctor.name} (${appointment.doctor.specialty})</p>
-                        <p><strong>看診日期:</strong> ${formatDateTime(appointment.appointment_date)}</p>
-                        <p><strong>看診原因:</strong> ${appointment.reason}</p>
-                        <div class="mt-4">
-                            <h3 class="font-semibold text-lg mb-2 text-purple-700">AI 白話文摘要</h3>
-                            <p class="p-4 bg-purple-50 rounded-lg text-gray-700">${summaryData.summary || "目前尚無摘要。"}</p>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">本次看診處方</h3>
-                        <div class="space-y-4">${prescriptionsHTML}</div>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">功能</h3>
-                        <div class="flex space-x-4">
-                            <button id="show-pre-consultation" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">填寫/更新診前準備</button>
-                        </div>
-                    </div>
-                </div>`;
-            
-            document.getElementById('show-pre-consultation').addEventListener('click', () => renderPreConsultationForm(appointment));
+            return `
+                <div data-appointment-id="${appt.id}" class="submenu-item p-3 pl-8 text-sm text-gray-600 hover:bg-gray-100">
+                    <p>${formatDateTime(appt.appointment_date)}</p>
+                    <p class="text-xs text-gray-500 flex items-center">${appt.doctor.name} 醫師 ${typeTag}</p>
+                </div>
+            `;
+        }).join('');
 
-        } catch (error) {
-            mainContentArea.innerHTML = `<div class="p-6 text-center text-red-500">無法載入摘要: ${error.message}</div>`;
-        }
+        document.querySelectorAll('.submenu-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (currentView !== 'summaries') {
+                    setActiveNav('summaries');
+                }
+                document.querySelectorAll('.submenu-item').forEach(i => i.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                const appointmentId = e.currentTarget.dataset.appointmentId;
+                const selectedAppointment = allAppointments.find(a => a.id == appointmentId);
+                renderSummaryDetailView(selectedAppointment);
+            });
+        });
     }
 
+    function renderSummaryDetailView(appointment) {
+        const container = document.getElementById('summary-detail-container');
+        if (!container) return;
+
+        const generalTaskBanner = document.getElementById('general-task-banner');
+
+        if (!appointment) {
+            if (generalTaskBanner) generalTaskBanner.classList.add('hidden');
+            container.innerHTML = `<div class="text-center text-gray-500 p-8 bg-white rounded-lg shadow">請從左側選擇一筆看診紀錄查看詳情。</div>`;
+            return;
+        }
+
+        if (generalTaskBanner) {
+            const isScheduledAppointment = appointment.appointment_type === 'scheduled';
+            generalTaskBanner.classList.toggle('hidden', !isScheduledAppointment);
+        }
+
+        const summaryHTML = createSummaryHTML(appointment.summary);
+        
+        const appointmentPrescriptions = allPrescriptions.filter(p => p.appointment_id === appointment.id);
+        const prescriptionsHTML = appointmentPrescriptions.length > 0 
+            ? `<div class="space-y-4">${appointmentPrescriptions.map(p => `
+                <div class="p-4 border rounded-lg bg-gray-50 text-sm">
+                    <div class="flex items-start space-x-4">
+                        <img id="med-img-${p.id}" src="https://via.placeholder.com/80x80.png?text=Loading" alt="藥物圖片" class="w-20 h-20 object-cover rounded-md bg-white border">
+                        <div class="flex-1">
+                            <p><strong>藥品名稱:</strong> ${p.medication_name}</p>
+                            <p><strong>劑量:</strong> ${p.dosage}</p>
+                            <p><strong>頻率:</strong> ${p.frequency}</p>
+                            <p class="text-xs text-gray-400">健保代碼: ${p.medication_code || '未提供'}</p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <details class="text-xs">
+                            <summary class="cursor-pointer font-semibold text-gray-600">顯示/隱藏 可能的副作用</summary>
+                            <p id="med-effects-${p.id}" class="mt-2 whitespace-pre-wrap text-gray-500 bg-white p-2 rounded">載入中...</p>
+                        </details>
+                    </div>
+                </div>
+              `).join('')}</div>` 
+            : '<p class="text-gray-500">本次看診無開立處方。</p>';
+        
+        const isFutureAppointment = new Date(appointment.appointment_date) > new Date();
+        const isWalkIn = appointment.appointment_type === 'walk-in';
+        const isScheduled = appointment.appointment_type === 'scheduled';
+        const hasTasks = appointment.tasks && appointment.tasks.length > 0;
+        
+        let preConsultationButtonHTML = '';
+
+        if (isWalkIn) {
+            preConsultationButtonHTML = `<button data-appointment-id="${appointment.id}" class="pre-consult-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">填寫/更新診前症狀單</button>`;
+        } 
+        else if (isScheduled) {
+            if (isFutureAppointment && !hasTasks) {
+                preConsultationButtonHTML = `<button data-appointment-id="${appointment.id}" class="pre-consult-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">填寫診前準備</button>`;
+            }
+        }
+        
+        const displayReason = isWalkIn ? appointment.reason.replace('[WALK-IN]', '').trim() : appointment.reason;
+
+        container.innerHTML = `
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="accordion-header p-4 cursor-pointer flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-gray-800">看診摘要</h2>
+                        <svg class="accordion-arrow w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="p-6">
+                            <p class="text-gray-600 mb-4"><strong>主治醫師:</strong> ${appointment.doctor.name} (${appointment.doctor.specialty})</p>
+                            <p><strong>看診日期:</strong> ${formatDateTime(appointment.appointment_date)}</p>
+                            <p><strong>看診原因:</strong> ${displayReason}</p>
+                            <div class="mt-6">
+                                <h3 class="font-semibold text-lg mb-2 text-indigo-700">AI 白話文摘要</h3>
+                                <div class="p-4 bg-indigo-50 rounded-lg space-y-4">${summaryHTML}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                     <div class="accordion-header p-4 cursor-pointer flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-gray-800">本次看診處方</h2>
+                        <svg class="accordion-arrow w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="p-6">${prescriptionsHTML}</div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="accordion-header p-4 cursor-pointer flex justify-between items-center">
+                        <h2 class="text-xl font-bold text-gray-800">功能</h2>
+                        <svg class="accordion-arrow w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="p-6">${preConsultationButtonHTML || '<p class="text-gray-500">目前無可用功能。</p>'}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (appointmentPrescriptions.length > 0) {
+            appointmentPrescriptions.forEach(p => {
+                if (p.medication_code) {
+                    (async () => {
+                        try {
+                            const medInfo = await apiRequest(`/medication-info/${p.medication_code}`);
+                            const imgElement = document.getElementById(`med-img-${p.id}`);
+                            const effectsElement = document.getElementById(`med-effects-${p.id}`);
+                            if (imgElement) imgElement.src = medInfo.image_url;
+                            if (effectsElement) effectsElement.textContent = medInfo.side_effects;
+                        } catch (error) {
+                            console.error(`無法載入藥品 ${p.medication_code} 的資訊:`, error);
+                            const effectsElement = document.getElementById(`med-effects-${p.id}`);
+                            if (effectsElement) effectsElement.textContent = "載入藥物資訊失敗。";
+                        }
+                    })();
+                } else {
+                     const effectsElement = document.getElementById(`med-effects-${p.id}`);
+                     if (effectsElement) effectsElement.textContent = "此藥品未提供健保代碼，無法查詢詳細資訊。";
+                }
+            });
+        }
+
+        container.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.classList.toggle('open');
+                const content = header.nextElementSibling;
+                content.classList.toggle('open');
+            });
+        });
+        
+        const firstAccordion = container.querySelector('.accordion-header');
+        if(firstAccordion) {
+            firstAccordion.click();
+        }
+
+        document.querySelectorAll('.pre-consult-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const appointmentId = e.target.dataset.appointmentId;
+                const selectedAppointment = allAppointments.find(a => a.id == appointmentId);
+                renderPreConsultationForm(selectedAppointment);
+            });
+        });
+    }
+    
     function renderPreConsultationForm(appointment) {
+        const isGeneralTask = !appointment;
+
+        const existingTask = !isGeneralTask && appointment.tasks && appointment.tasks.length > 0 ? appointment.tasks[0] : null;
+        let existingSymptoms = [];
+        let existingMeds = [];
+        let existingQuestions = '';
+
+        if (existingTask) {
+            const parts = existingTask.description.split('|');
+            existingSymptoms = (parts.find(p => p.includes('[症狀]:')) || '').replace('[症狀]:', '').trim().split(',').map(s => s.trim()).filter(Boolean);
+            existingMeds = (parts.find(p => p.includes('[藥物]:')) || '').replace('[藥物]:', '').trim().split(',').map(s => s.trim()).filter(Boolean);
+            existingQuestions = (parts.find(p => p.includes('[提問]:')) || '').replace('[提問]:', '').trim();
+        }
+        
+        const title = isGeneralTask ? "紀錄問題" : "診前準備";
+        const subtitle = isGeneralTask 
+            ? '<p class="text-sm text-gray-500">紀錄您想在未來與醫師討論的問題。</p>' 
+            : `<p class="text-sm text-gray-500">預約時間: ${formatDateTime(appointment.appointment_date)}</p>`;
+
         mainContentArea.innerHTML = `
             <div class="bg-white p-6 rounded-lg shadow-md">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">診前準備 (看診 ID: ${appointment.id})</h2>
-                    <button id="back-to-summary" class="text-blue-500 hover:underline">返回摘要</button>
+                    <div>
+                        <h2 class="text-2xl font-bold">${title}</h2>
+                        ${subtitle}
+                    </div>
+                    <button id="back-to-summary" class="text-indigo-600 hover:underline">返回摘要列表</button>
                 </div>
                 <form id="pre-consultation-form">
-                    <div class="mb-6"><h3 class="font-semibold text-lg mb-2">您目前的身體狀況 (可複選)</h3><div><input type="checkbox" id="symptom-dizzy" value="頭暈" class="symptom-checkbox mr-2"><label for="symptom-dizzy">頭暈</label></div><div><input type="checkbox" id="symptom-fatigue" value="疲勞" class="symptom-checkbox mr-2"><label for="symptom-fatigue">疲勞</label></div><div><input type="checkbox" id="symptom-vision" value="視力模糊" class="symptom-checkbox mr-2"><label for="symptom-vision">視力模糊</label></div></div>
-                    <div class="mb-6"><h3 class="font-semibold text-lg mb-2">最想問醫生的問題</h3><textarea id="questions-text" class="w-full p-2 border rounded-lg" rows="4"></textarea></div>
-                    <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">提交</button>
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-lg mb-2 text-gray-800">您目前的身体状况 (可複選)</h3>
+                        <div class="space-y-2">
+                            <div><input type="checkbox" id="symptom-dizzy" value="頭暈" class="symptom-checkbox mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><label for="symptom-dizzy">頭暈</label></div>
+                            <div><input type="checkbox" id="symptom-fatigue" value="疲勞" class="symptom-checkbox mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><label for="symptom-fatigue">疲勞</label></div>
+                            <div><input type="checkbox" id="symptom-vision" value="視力模糊" class="symptom-checkbox mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><label for="symptom-vision">視力模糊</label></div>
+                        </div>
+                    </div>
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-lg mb-2 text-gray-800">最想問醫生的問題</h3>
+                        <textarea id="questions-text" class="w-full p-2 border rounded-lg" rows="4" placeholder="請在此輸入您想詢問的問題...">${existingQuestions}</textarea>
+                    </div>
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-lg mb-2 text-gray-800">常用藥物 (可複選)</h3>
+                        <div class="space-y-2">
+                            <div><input type="checkbox" id="med-metformin" value="Metformin (降血糖藥)" class="med-checkbox mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><label for="med-metformin">Metformin (降血糖藥)</label></div>
+                            <div><input type="checkbox" id="med-aspirin" value="Aspirin (抗血小板)" class="med-checkbox mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><label for="med-aspirin">Aspirin (抗血小板)</label></div>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">提交準備資料</button>
                     <p id="pre-consult-message" class="mt-4 text-center"></p>
                 </form>
             </div>`;
         
-        document.getElementById('back-to-summary').addEventListener('click', () => renderSummaryView(appointment));
+        document.querySelectorAll('.symptom-checkbox').forEach(cb => {
+            if (existingSymptoms.includes(cb.value)) cb.checked = true;
+        });
+        document.querySelectorAll('.med-checkbox').forEach(cb => {
+            if (existingMeds.includes(cb.value)) cb.checked = true;
+        });
 
+        document.getElementById('back-to-summary').addEventListener('click', () => setActiveNav('summaries', true));
+        
         document.getElementById('pre-consultation-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const messageEl = document.getElementById('pre-consult-message');
             messageEl.textContent = "提交中...";
+            
             const symptoms = Array.from(document.querySelectorAll('.symptom-checkbox:checked')).map(el => el.value);
-            const questions = document.getElementById('questions-text').value;
+            const meds = Array.from(document.querySelectorAll('.med-checkbox:checked')).map(el => el.value);
+            const questions = document.getElementById('questions-text').value.trim();
+            
             try {
-                const description = `[症狀]: ${symptoms.join(', ') || '無'} | [提問]: ${questions || '無'}`;
-                const today = new Date().toISOString().split('T')[0];
-                const taskData = { description, due_date: today };
-                await apiRequest(`/appointments/${appointment.id}/tasks`, 'POST', taskData);
-                messageEl.textContent = '準備資料已成功提交！';
+                const description = `[症狀]: ${symptoms.join(', ') || '無'} | [藥物]: ${meds.join(', ') || '無'} | [提問]: ${questions || '無'}`;
+                
+                let dueDate;
+                if (isGeneralTask) {
+                    const futureAppointments = allAppointments
+                        .filter(appt => appt.appointment_type === 'scheduled' && new Date(appt.appointment_date) > new Date())
+                        .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
+
+                    if (futureAppointments.length > 0) {
+                        dueDate = futureAppointments[0].appointment_date.split('T')[0];
+                    } else {
+                        dueDate = new Date().toISOString().split('T')[0];
+                    }
+                } else {
+                    dueDate = appointment.appointment_date.split('T')[0];
+                }
+
+                const taskData = { description, due_date: dueDate };
+
+                if (isGeneralTask) {
+                    await apiRequest(`/tasks/`, 'POST', taskData);
+                } else {
+                    await apiRequest(`/appointments/${appointment.id}/tasks`, 'POST', taskData);
+                }
+                
+                messageEl.textContent = '資料已成功提交！';
                 messageEl.className = 'mt-4 text-center text-green-500';
-                setTimeout(() => renderSummaryView(appointment), 1500);
+                setTimeout(() => { 
+                    refreshData().then(() => setActiveNav('tasks', true));
+                }, 1500);
             } catch (error) {
                 messageEl.textContent = `錯誤: ${error.message}`;
                 messageEl.className = 'mt-4 text-center text-red-500';
             }
         });
     }
-    
-    async function renderPrescriptionsView() {
-        mainContentArea.innerHTML = `<div class="p-6 text-center">正在載入您的處方紀錄...</div>`;
-        try {
-            const prescriptions = await apiRequest('/patients/me/prescriptions');
-            let prescriptionsHTML = '<p class="text-gray-500">您目前沒有任何處方紀錄。</p>';
-            if (prescriptions && prescriptions.length > 0) {
-                const sortedPrescriptions = prescriptions.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-                prescriptionsHTML = sortedPrescriptions.map(p => `
-                    <div class="border rounded-lg p-4 bg-gray-50">
-                        <p class="text-sm text-gray-500"><strong>開立時間:</strong> ${formatDateTime(p.created_at)}</p>
-                        <p><strong>藥品名稱:</strong> ${p.medication_name}</p>
-                        <p><strong>劑量:</strong> ${p.dosage}</p>
-                        <p><strong>頻率:</strong> ${p.frequency}</p>
-                    </div>`).join('');
-            }
-            mainContentArea.innerHTML = `
-                <div id="prescriptions-view" class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">我的處方紀錄</h2>
-                    <div class="space-y-4">${prescriptionsHTML}</div>
-                </div>`;
-        } catch (error) {
-            mainContentArea.innerHTML = `<div class="p-6 text-center text-red-500">無法載入處方紀錄: ${error.message}</div>`;
+
+    function renderTasksView() {
+        const pendingTasks = allTasks.filter(task => !task.is_completed);
+
+        const nextAppointment = allAppointments
+            .filter(appt => appt.appointment_type === 'scheduled' && new Date(appt.appointment_date) > new Date())
+            .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))[0];
+
+        let upcomingTasks = [];
+        let otherTasks = [];
+
+        if (nextAppointment) {
+            pendingTasks.forEach(task => {
+                if (task.due_date === nextAppointment.appointment_date.split('T')[0]) {
+                    upcomingTasks.push(task);
+                } else {
+                    otherTasks.push(task);
+                }
+            });
+        } else {
+            otherTasks = pendingTasks;
         }
+
+        const createTaskCardHTML = (task) => {
+            const description = task.description;
+            const parts = description.split('|');
+            const symptoms = (parts.find(p => p.includes('[症狀]:')) || '').replace('[症狀]:', '').trim();
+            const meds = (parts.find(p => p.includes('[藥物]:')) || '').replace('[藥物]:', '').trim();
+            const questions = (parts.find(p => p.includes('[提問]:')) || '').replace('[提問]:', '').trim();
+            const recordTime = formatDateTime(task.created_at);
+
+            const symptomsHTML = symptoms && symptoms !== '無'
+                ? symptoms.split(',').map(s => s.trim()).filter(s => s).map(s => `<span class="inline-block bg-indigo-100 text-indigo-800 text-sm font-medium mr-2 mb-2 px-2.5 py-0.5 rounded-full">${s}</span>`).join('')
+                : '';
+            const medsHTML = meds && meds !== '無'
+                ? meds.split(',').map(m => m.trim()).filter(m => m).map(m => `<span class="inline-block bg-sky-100 text-sky-800 text-sm font-medium mr-2 mb-2 px-2.5 py-0.5 rounded-full">${m}</span>`).join('')
+                : '';
+            const questionsHTML = questions && questions !== '無' ? `<p class="text-gray-600 pl-2">${questions}</p>` : '';
+
+            return `
+                <div class="bg-white rounded-lg shadow-md p-5 border-l-4 border-indigo-400 flex items-start space-x-4" data-task-id="${task.id}">
+                    <input type="checkbox" id="task-${task.id}" ${task.is_completed ? 'checked' : ''} class="h-6 w-6 mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 task-checkbox">
+                    <div class="flex-1">
+                        <div class="space-y-4">
+                            ${symptomsHTML ? `<div><h4 class="font-semibold text-gray-800">回報症狀</h4><div class="pl-2 mt-2 flex flex-wrap">${symptomsHTML}</div></div>` : ''}
+                            ${medsHTML ? `<div><h4 class="font-semibold text-gray-800">常用藥物</h4><div class="pl-2 mt-2 flex flex-wrap">${medsHTML}</div></div>` : ''}
+                            ${questionsHTML ? `<div><h4 class="font-semibold text-gray-800">想問醫生的問題</h4>${questionsHTML}</div>` : ''}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-4 pt-2 border-t">
+                            <span>記錄時間: ${recordTime}</span> | <span class="text-gray-500">截止日期: ${task.due_date}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        let pageHTML = `
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">與醫師的討論事項</h2>
+                <button id="show-history-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded text-sm">
+                    查看歷史紀錄
+                </button>
+            </div>
+        `;
+
+        if (pendingTasks.length === 0) {
+            pageHTML += `<div class="text-center text-gray-500 p-8 bg-white rounded-lg shadow">您目前沒有任何待辦任務。</div>`;
+        } else {
+            if (nextAppointment && upcomingTasks.length > 0) {
+                pageHTML += `
+                    <div class="mb-8">
+                        <h3 class="text-lg font-bold text-indigo-700 mb-3 border-b pb-2">下次預約回診：${formatDateTime(nextAppointment.appointment_date)}</h3>
+                        <div class="space-y-4">${upcomingTasks.map(createTaskCardHTML).join('')}</div>
+                    </div>
+                `;
+            }
+            if (otherTasks.length > 0) {
+                pageHTML += `
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-700 mb-3 border-b pb-2">其他紀錄事項</h3>
+                        <div class="space-y-4">${otherTasks.map(createTaskCardHTML).join('')}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        mainContentArea.innerHTML = pageHTML;
+
+        mainContentArea.querySelectorAll('.task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', async (e) => {
+                const taskId = e.target.closest('[data-task-id]').dataset.taskId;
+                const isCompleted = e.target.checked;
+                const taskCard = e.target.closest('[data-task-id]');
+                
+                taskCard.classList.toggle('opacity-50', isCompleted);
+                taskCard.classList.toggle('bg-gray-50', isCompleted);
+                
+                try {
+                    await apiRequest(`/tasks/${taskId}`, 'PUT', { is_completed: isCompleted });
+                    await refreshData();
+                } catch (error) {
+                    alert(`更新任務失敗: ${error.message}`);
+                    e.target.checked = !isCompleted;
+                    taskCard.classList.toggle('opacity-50', !isCompleted);
+                    taskCard.classList.toggle('bg-gray-50', !isCompleted);
+                }
+            });
+        });
+
+        document.getElementById('show-history-btn').addEventListener('click', () => {
+            renderTaskHistoryModal();
+        });
+    }
+    
+    function renderTaskHistoryModal() {
+        const historyTasks = allTasks
+            .filter(task => task.is_completed)
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        const tasksHTML = historyTasks.length > 0 
+            ? historyTasks.map(task => {
+                const parts = task.description.split('|');
+                const questions = (parts.find(p => p.includes('[提問]:')) || '').replace('[提問]:', '').trim();
+                const recordTime = formatDateTime(task.created_at);
+                
+                return `
+                    <div class="p-3 border rounded-lg bg-gray-50 flex justify-between items-center text-sm">
+                        <div>
+                            <p class="text-gray-800">${questions !== '無' ? questions : task.description}</p>
+                            <p class="text-xs text-gray-400 mt-1">記錄於: ${recordTime}</p>
+                        </div>
+                        <button data-task-id="${task.id}" class="delete-task-btn text-red-400 hover:text-red-600 p-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+            }).join('')
+            : '<p class="text-gray-500 text-center py-4">目前沒有已完成的歷史紀錄。</p>';
+
+        const modalHTML = `
+            <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full modal-overlay opacity-0">
+                <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white transform scale-95 modal-container">
+                    <div class="flex justify-between items-center pb-3 border-b">
+                        <p class="text-2xl font-bold">歷史紀錄</p>
+                        <button class="close-modal-btn cursor-pointer z-50 p-1">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div class="py-4 max-h-[60vh] overflow-y-auto custom-scrollbar space-y-3">
+                        ${tasksHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        openModal(modalHTML);
+
+        document.querySelectorAll('.delete-task-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const taskId = e.currentTarget.dataset.taskId;
+                if (confirm('您確定要永久刪除此筆紀錄嗎？')) {
+                    try {
+                        await apiRequest(`/tasks/${taskId}`, 'DELETE');
+                        allTasks = allTasks.filter(t => t.id != taskId);
+                        renderTaskHistoryModal(); 
+                    } catch (error) {
+                        alert(`刪除失敗: ${error.message}`);
+                    }
+                }
+            });
+        });
     }
 
-    async function showMainApp() {
-        const token = localStorage.getItem('authToken');
-        if (!token) { showAuth(); return; }
+    // --- 應用程式流程 ---
+    async function refreshData() {
         try {
-            const [patientProfile, appointments] = await Promise.all([
-                apiRequest('/patients/me'),
-                apiRequest('/patients/me/appointments')
+            const [appointments, prescriptions, tasks] = await Promise.all([
+                apiRequest('/patients/me/appointments'),
+                apiRequest('/patients/me/prescriptions'),
+                apiRequest('/tasks/')
             ]);
-            currentPatientProfile = patientProfile;
+            
+            allAppointments = appointments;
+            allPrescriptions = prescriptions;
+            allTasks = tasks;
+            
+            setActiveNav(currentView, true);
+
+        } catch (error) {
+            console.error("刷新資料失敗:", error);
+        }
+    }
+    
+    async function showMainApp() {
+        try {
+            patientProfile = await apiRequest('/patients/me');
+            authContainer.innerHTML = '';
             authContainer.classList.add('hidden');
             mainAppView.classList.remove('hidden');
             patientNameDisplay.textContent = `你好, ${patientProfile.name}`;
-            renderSidebarMenu(appointments);
+            
+            await refreshData();
+            setActiveNav('summaries');
             if (patientProfile.user_id) {
                 connectWebSocket(patientProfile.user_id);
             }
@@ -348,79 +861,161 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function setActiveNav(view, forceRefresh = false) {
+        if (currentView === view && !forceRefresh) {
+            return;
+        }
+        
+        currentView = view;
+        mainContentArea.innerHTML = ''; 
+
+        navSummaries.classList.toggle('active', view === 'summaries');
+        navTasks.classList.toggle('active', view === 'tasks');
+
+        if (view === 'summaries') {
+            mainContentArea.innerHTML = `
+                <div id="general-task-banner" class="mb-6 bg-white p-4 rounded-lg shadow-md hidden">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-800">準備下次看診的問題？</h3>
+                            <p class="text-sm text-gray-500">您可以隨時記錄想問醫師的問題，方便下次看診時討論。</p>
+                        </div>
+                        <button id="add-general-task-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">紀錄問題</button>
+                    </div>
+                </div>
+                <div id="summary-detail-container"></div>
+            `;
+
+            const addGeneralTaskBtn = document.getElementById('add-general-task-btn');
+            if (addGeneralTaskBtn) {
+                addGeneralTaskBtn.addEventListener('click', () => {
+                    renderPreConsultationForm(null);
+                });
+            }
+
+            renderSummariesSidebar();
+            
+            const activeSubmenuItem = summariesSubmenu.querySelector('.submenu-item.active');
+            if (activeSubmenuItem) {
+                const appointmentId = activeSubmenuItem.dataset.appointmentId;
+                const selectedAppointment = allAppointments.find(a => a.id == appointmentId);
+                renderSummaryDetailView(selectedAppointment);
+            } else if (allAppointments.length > 0) {
+                const firstSubmenuItem = summariesSubmenu.querySelector('.submenu-item');
+                if (firstSubmenuItem) {
+                    firstSubmenuItem.classList.add('active');
+                    const appointmentId = firstSubmenuItem.dataset.appointmentId;
+                    const selectedAppointment = allAppointments.find(a => a.id == appointmentId);
+                    renderSummaryDetailView(selectedAppointment);
+                }
+            } else {
+                renderSummaryDetailView(null);
+            }
+
+        } else if (view === 'tasks') {
+            renderTasksView();
+        }
+    }
+
     function showAuth() {
-        authContainer.classList.remove('hidden');
-        mainAppView.classList.add('hidden');
         const authTemplate = document.getElementById('auth-template');
         authContainer.innerHTML = authTemplate.innerHTML;
+        authContainer.classList.remove('hidden');
+        mainAppView.classList.add('hidden');
         initializeAuthEventListeners();
     }
 
     function logout() {
         if (websocket) websocket.close();
         localStorage.removeItem('authToken');
-        currentPatientProfile = null;
-        allAppointments = [];
         showAuth();
     }
-
+    
     function initializeAuthEventListeners() {
-        document.getElementById('go-to-register').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('login-view').classList.add('hidden');
-            document.getElementById('register-view').classList.remove('hidden');
+        const loginView = document.getElementById('login-view');
+        const registerView = document.getElementById('register-view');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const goToRegisterLink = document.getElementById('go-to-register');
+        const goToLoginLink = document.getElementById('go-to-login');
+        
+        if (!loginForm || !registerForm || !goToRegisterLink || !goToLoginLink) return;
+
+        goToRegisterLink.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            loginView.classList.add('hidden'); 
+            registerView.classList.remove('hidden'); 
         });
-        document.getElementById('go-to-login').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('register-view').classList.add('hidden');
-            document.getElementById('login-view').classList.remove('hidden');
+        
+        goToLoginLink.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            registerView.classList.add('hidden'); 
+            loginView.classList.remove('hidden'); 
         });
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
+
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const msgEl = document.getElementById('login-error-message');
-            msgEl.textContent = '登入中...';
+            const loginErrorMessage = document.getElementById('login-error-message');
+            loginErrorMessage.textContent = '登入中...';
             try {
-                const credentials = { username: e.target.elements['login-username'].value, password: e.target.elements['login-password'].value };
+                const credentials = { 
+                    username: loginForm.querySelector('#login-username').value, 
+                    password: loginForm.querySelector('#login-password').value 
+                };
                 const response = await apiRequest('/token', 'POST', credentials);
                 localStorage.setItem('authToken', response.access_token);
                 await showMainApp();
             } catch (error) {
-                msgEl.textContent = `錯誤: ${error.message}`;
+                loginErrorMessage.textContent = `錯誤: ${error.message}`;
             }
         });
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
+
+        registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const msgEl = document.getElementById('register-message');
-            msgEl.textContent = '註冊中...';
+            const registerMessage = document.getElementById('register-message');
+            registerMessage.textContent = '註冊中...';
             const patientData = {
-                name: document.getElementById('register-name').value,
-                birthDate: document.getElementById('register-birthdate').value,
-                gender: document.getElementById('register-gender').value,
+                name: registerForm.querySelector('#register-name').value,
+                birthDate: registerForm.querySelector('#register-birthdate').value,
+                gender: registerForm.querySelector('#register-gender').value,
                 credentials: {
-                    username: document.getElementById('register-username').value,
-                    password: document.getElementById('register-password').value
+                    username: registerForm.querySelector('#register-username').value,
+                    password: registerForm.querySelector('#register-password').value
                 }
             };
             try {
                 await apiRequest('/patients/', 'POST', patientData);
-                msgEl.textContent = `註冊成功！請返回登入。`;
-                msgEl.className = 'mt-4 text-center text-green-500';
-                e.target.reset();
+                registerMessage.textContent = `註冊成功！請返回登入。`;
+                registerMessage.className = 'mt-4 text-center text-green-500';
+                registerForm.reset();
             } catch (error) {
-                msgEl.textContent = `錯誤: ${error.message}`;
-                msgEl.className = 'mt-4 text-center text-red-500';
+                registerMessage.textContent = `錯誤: ${error.message}`;
+                registerMessage.className = 'mt-4 text-center text-red-500';
             }
         });
     }
-    
-    document.getElementById('show-prescriptions-btn').addEventListener('click', renderPrescriptionsView);
-    logoutButton.addEventListener('click', logout);
 
-    if (localStorage.getItem('authToken')) {
-        showMainApp();
-    } else {
-        showAuth();
+    logoutButton.addEventListener('click', logout);
+    
+    navSummaries.addEventListener('click', () => {
+        if (currentView !== 'summaries') {
+            setActiveNav('summaries', true);
+        }
+        navSummaries.classList.toggle('open');
+        summariesSubmenu.classList.toggle('open');
+    });
+
+    navTasks.addEventListener('click', () => setActiveNav('tasks', true));
+
+    function init() {
+        if (localStorage.getItem('authToken')) {
+            showMainApp();
+        } else {
+            showAuth();
+        }
     }
+    
+    init();
 });
 </script>
 </body>
