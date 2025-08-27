@@ -540,6 +540,7 @@ def read_doctor_me(current_user: User = Depends(get_current_user), db: Session =
     if not doctor_profile:
         raise HTTPException(status_code=404, detail="找不到對應的醫生資料")
     return doctor_profile
+## 唯一的修改點是在 options(...) 中多加了一行 joinedload
 
 @app.get("/doctors/me/appointments", response_model=List[AppointmentForDoctor], tags=["Doctors"])
 def read_doctor_appointments(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -550,11 +551,11 @@ def read_doctor_appointments(current_user: User = Depends(get_current_user), db:
     if not doctor_profile:
         raise HTTPException(status_code=404, detail="找不到對應的醫生資料")
 
-    # 【主要修改點】
-    # 使用 joinedload 預先載入相關的 patient 資料，
-    # 這樣可以避免 N+1 查詢問題並解決序列化 (serialization) 錯誤。
+    # 【最終修正版】
+    # 這次我們同時預先載入 patient 和 tasks 兩個關聯資料，徹底解決問題
     appointments = db.query(AppointmentDB).options(
-        joinedload(AppointmentDB.patient)
+        joinedload(AppointmentDB.patient),
+        joinedload(AppointmentDB.tasks)  # <--- 新增這一行來載入任務
     ).filter(AppointmentDB.doctor_id == doctor_profile.id).order_by(AppointmentDB.appointment_date.desc()).all()
     
     return appointments
