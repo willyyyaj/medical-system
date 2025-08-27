@@ -545,10 +545,19 @@ def read_doctor_me(current_user: User = Depends(get_current_user), db: Session =
 def read_doctor_appointments(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if current_user.role != "Doctor":
         raise HTTPException(status_code=403, detail="權限不足，僅限醫生本人操作")
+    
     doctor_profile = db.query(DoctorDB).filter(DoctorDB.user_id == current_user.id).first()
     if not doctor_profile:
         raise HTTPException(status_code=404, detail="找不到對應的醫生資料")
-    return doctor_profile.appointments
+
+    # 【主要修改點】
+    # 使用 joinedload 預先載入相關的 patient 資料，
+    # 這樣可以避免 N+1 查詢問題並解決序列化 (serialization) 錯誤。
+    appointments = db.query(AppointmentDB).options(
+        joinedload(AppointmentDB.patient)
+    ).filter(AppointmentDB.doctor_id == doctor_profile.id).order_by(AppointmentDB.appointment_date.desc()).all()
+    
+    return appointments
 
 @app.get("/doctors/me/patients", response_model=List[Patient], tags=["Doctors"], summary="獲取目前登入醫生的病患列表")
 def read_doctor_patients(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
