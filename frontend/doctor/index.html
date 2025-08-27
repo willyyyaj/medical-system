@@ -25,11 +25,9 @@
 </head>
 <body class="bg-gray-100 font-sans">
 
-    <!-- 登入/註冊 Template -->
     <template id="auth-template">
         <div class="min-h-screen flex items-center justify-center">
             <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-                <!-- 登入畫面 -->
                 <div id="login-view">
                     <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">醫生登入</h2>
                     <form id="login-form">
@@ -46,7 +44,6 @@
                     </form>
                     <p class="mt-4 text-center text-sm">還沒有帳號嗎？ <a href="#" id="go-to-register" class="text-indigo-600 hover:underline">點此註冊</a></p>
                 </div>
-                <!-- 註冊畫面 -->
                 <div id="register-view" class="hidden">
                     <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">註冊醫生帳號</h2>
                     <form id="register-form">
@@ -76,10 +73,8 @@
         </div>
     </template>
 
-    <!-- 登入畫面容器 -->
     <div id="auth-container"></div>
 
-    <!-- 主應用程式畫面 -->
     <div id="main-app-view" class="hidden">
         <header class="bg-white shadow-md">
             <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -92,20 +87,19 @@
         </header>
         
         <div class="main-view flex">
-            <!-- 左側病患選單 -->
             <aside class="w-1/4 bg-white border-r flex flex-col">
                 <div class="p-4 border-b flex justify-between items-center">
                     <h2 class="text-lg font-bold text-gray-800">我的病患</h2>
-                    <button id="add-appointment-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-3 rounded text-sm">+ 新增預約</button>
+                    <div>
+                        <button id="add-appointment-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-1 px-3 rounded text-sm">+ 新增預約</button>
+                        <button id="show-walk-in-modal-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm ml-2">現場掛號</button>
+                    </div>
                 </div>
                 <nav id="sidebar-menu" class="flex-grow custom-scrollbar overflow-y-auto"></nav>
             </aside>
 
-            <!-- 右側主內容區 -->
             <div id="main-content-area" class="w-3/4 custom-scrollbar overflow-y-auto">
-                <!-- 病歷總覽介面 -->
                 <main id="chart-view" class="h-full p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 hidden">
-                    <!-- 左欄 (病患資訊) -->
                     <div class="bg-white rounded-lg shadow-lg flex flex-col">
                         <div class="p-4 border-b">
                             <h3 id="chart-patient-name" class="text-2xl font-bold text-gray-800"></h3>
@@ -114,12 +108,14 @@
                         <div class="p-4 custom-scrollbar flex-grow overflow-y-auto">
                             <div id="pre-fill-title-container" class="flex justify-between items-center mb-2">
                                 <h4 class="font-semibold text-gray-700">預約與回報紀錄</h4>
+                                <button id="add-appointment-for-patient-btn" class="bg-indigo-100 text-indigo-600 hover:bg-indigo-200 p-1 rounded-full w-6 h-6 flex items-center justify-center" title="為此病患新增預約">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                </button>
                             </div>
                             <div id="consult-pre-fill" class="text-sm text-gray-600 space-y-4"></div>
                         </div>
                     </div>
 
-                    <!-- 中欄 (互動區) -->
                     <div class="bg-white rounded-lg shadow-lg flex flex-col">
                         <div class="p-4 border-b flex justify-between items-center">
                             <h3 id="interaction-title" class="font-bold text-lg text-gray-800">即時互動區</h3>
@@ -128,19 +124,16 @@
                         <div class="p-4 flex-grow grid grid-rows-2 gap-4">
                             <div class="flex flex-col">
                                 <h4 class="font-semibold text-gray-700 mb-2">即時逐字稿</h4>
-                                <!-- [修改] 將 div 改為 textarea，使其可編輯 -->
                                 <textarea id="transcript-area" class="flex-grow p-3 bg-gray-50 rounded custom-scrollbar overflow-y-auto text-gray-700" placeholder="(點擊上方按鈕開始錄音，或手動輸入)"></textarea>
-                                <!-- [新增] 新增「生成摘要」按鈕 -->
                                 <button id="generate-summary-btn" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">由逐字稿生成摘要</button>
                             </div>
                             <div class="flex flex-col">
                                 <h4 class="font-semibold text-gray-700 mb-2">AI 輔助提示</h4>
-                                <div id="ai-assist-area" class="flex-grow p-3 bg-gray-50 rounded custom-scrollbar overflow-y-auto text-gray-500">(...)</div>
+                                <div id="ai-assist-area" class="flex-grow p-3 bg-gray-50 rounded custom-scrollbar overflow-y-auto text-gray-500 whitespace-pre-wrap">(...)</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 右欄 (摘要與功能) -->
                     <div class="bg-white rounded-lg shadow-lg flex flex-col">
                         <div class="p-4 border-b">
                             <h3 id="summary-title" class="font-bold text-lg text-gray-800">AI 問診摘要</h3>
@@ -162,9 +155,7 @@
         </div>
     </div>
 
-    <!-- Modal 容器 -->
     <div id="modal-container" class="hidden">
-        <!-- 新增預約 Modal -->
         <div id="add-appointment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full modal-overlay opacity-0">
             <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white transform scale-95 modal-container">
                 <div class="flex justify-between items-center pb-3">
@@ -192,7 +183,6 @@
             </div>
         </div>
 
-        <!-- 開立處方 Modal -->
         <div id="prescribe-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full modal-overlay opacity-0">
             <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white transform scale-95 modal-container">
                 <div class="flex justify-between items-center pb-3">
@@ -209,6 +199,10 @@
                         <input type="text" id="medication-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
                     </div>
                     <div class="mb-4">
+                        <label for="medication-code" class="block text-sm font-medium text-gray-700">藥品健保代碼 (選填)</label>
+                        <input type="text" id="medication-code" placeholder="例如: AC49445100" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                    </div>
+                    <div class="mb-4">
                         <label for="dosage" class="block text-sm font-medium text-gray-700">劑量</label>
                         <input type="text" id="dosage" placeholder="例如: 10mg" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" required>
                     </div>
@@ -222,7 +216,6 @@
             </div>
         </div>
 
-        <!-- 查看病歷 Modal -->
         <div id="records-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full modal-overlay opacity-0">
             <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white transform scale-95 modal-container">
                 <div class="flex justify-between items-center pb-3 border-b mb-4">
@@ -232,17 +225,54 @@
                     </button>
                 </div>
                 <div id="records-content" class="space-y-4 max-h-[70vh] custom-scrollbar overflow-y-auto">
-                    <!-- Records will be loaded here -->
                 </div>
             </div>
         </div>
+        
+        <div id="walk-in-appointment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full modal-overlay opacity-0">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white transform scale-95 modal-container">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold">現場掛號</p>
+                    <button class="close-modal-btn cursor-pointer z-50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form id="walk-in-appointment-form">
+                    <div class="mb-4">
+                        <label for="walk-in-patient-select" class="block text-sm font-medium text-gray-700">選擇病患</label>
+                        <select id="walk-in-patient-select" name="patient_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" required>
+                            <option value="">讀取中...</option>
+                        </select>
+                    </div>
+                     <div class="mb-4">
+                        <label for="walk-in-time" class="block text-sm font-medium text-gray-700">看診時間</label>
+                        <input type="text" id="walk-in-time" class="mt-1 block w-full bg-gray-100 border border-gray-300 rounded-md shadow-sm py-2 px-3" readonly>
+                    </div>
+                    <div class="mb-4">
+                        <label for="walk-in-reason" class="block text-sm font-medium text-gray-700">主要事由</label>
+                        <input type="text" id="walk-in-reason" name="reason" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" required>
+                    </div>
+                    <button id="submit-walk-in-appointment-btn" type="button" class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        建立看診紀錄
+                    </button>
+                </form>
+            </div>
+        </div>
+
     </div>
 
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- 常數與狀態變數 ---
-    const baseURL = 'https://medical-system-ht13.onrender.com'; 
+    let baseURL;
+    const hostname = window.location.hostname;
+
+    if (hostname === "127.0.0.1" || hostname === "localhost") {
+        baseURL = "http://127.0.0.1:8000";
+    } else {
+        baseURL = "https://medical-system-ht13.onrender.com";
+    }
 
     // --- DOM 元素參考 ---
     const authContainer = document.getElementById('auth-container');
@@ -309,10 +339,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 工具函式 ---
-    function formatDateTime(isoString) {
-        if (!isoString) return '無';
-        const date = new Date(isoString.includes('Z') ? isoString : isoString + 'Z'); 
-        return date.toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    function formatDateTime(dateInput) {
+        if (!dateInput) return '無';
+        const date = new Date(dateInput);
+        if (isNaN(date.getTime())) return '無效日期';
+        
+        return date.toLocaleString('zh-TW', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false
+        });
     }
 
     // --- 互動視窗管理 ---
@@ -348,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         sidebarMenu.innerHTML = patients.map((patient, index) => `
-            <div data-index="${index}" class="sidebar-item p-4 border-b last:border-b-0">
+            <div data-patient-id="${patient.id}" data-index="${index}" class="sidebar-item p-4 border-b last:border-b-0">
                 <p class="font-semibold text-gray-800">${patient.name}</p>
                 <p class="text-sm text-gray-500">ID: ${patient.id}</p>
             </div>
@@ -364,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function showChartView(patient) {
+    async function showChartView(patient) {
         currentPatientForActions = patient;
         welcomeView.classList.add('hidden');
         chartView.classList.remove('hidden');
@@ -378,8 +417,32 @@ document.addEventListener('DOMContentLoaded', () => {
         
         currentAppointmentForActions = mostRecentAppointment || null;
         
+        const addAppointmentForPatientBtn = document.getElementById('add-appointment-for-patient-btn');
+        if (addAppointmentForPatientBtn) {
+            addAppointmentForPatientBtn.onclick = () => {
+                openAddAppointmentModal(patient); 
+            };
+        }
+
         renderPrefillInChart(patient);
         updateInteractionPanels(currentAppointmentForActions);
+
+        const aiAssistArea = document.getElementById('ai-assist-area');
+        aiAssistArea.textContent = '正在彙整病患問題...';
+        try {
+            // ✨ 修正 API 路徑，並假設後端有 /patients/{id}/tasks/questions 這樣的 API
+            const questionsData = await apiRequest(`/patients/${patient.id}/tasks/questions`);
+            
+            if (questionsData && questionsData.length > 0) {
+                const formattedQuestions = questionsData.map(q => `- ${q.question}`).join('\n');
+                aiAssistArea.textContent = `病患可能想討論以下問題：\n\n${formattedQuestions}`;
+            } else {
+                aiAssistArea.textContent = '病患目前沒有記錄任何想討論的問題。';
+            }
+        } catch (error) {
+            console.error("無法取得病患問題列表:", error);
+            aiAssistArea.textContent = '無法取得病患問題列表。';
+        }
     }
 
     function updateInteractionPanels(appointment) {
@@ -456,9 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPrefillInChart(patient) {
         const container = document.getElementById('consult-pre-fill');
-        const titleContainer = document.getElementById('pre-fill-title-container');
-        titleContainer.innerHTML = '<h4 class="font-semibold text-gray-700">預約與回報紀錄</h4>';
-
+        
         const patientAppointments = allAppointments
             .filter(appt => appt.patient.id === patient.id)
             .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date));
@@ -466,25 +527,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (patientAppointments.length > 0) {
             container.innerHTML = patientAppointments.map(appt => {
                 const isActive = currentAppointmentForActions && appt.id === currentAppointmentForActions.id;
+                
+                const isWalkIn = appt.appointment_type === 'walk-in';
+                const displayReason = appt.reason || '<span class="text-gray-400">未提供</span>';
+
+                let typeTag = '';
+                if (isWalkIn) {
+                    typeTag = '<span class="ml-2 text-xs font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full">現場掛號</span>';
+                } else {
+                    typeTag = '<span class="ml-2 text-xs font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">預約回診</span>';
+                }
+
                 let html = `<div data-appointment-id="${appt.id}" class="appointment-card relative p-3 border rounded-lg bg-gray-50 space-y-2 ${isActive ? 'active' : ''}">`;
                 html += `<button data-appointment-id="${appt.id}" class="delete-appointment-btn absolute top-2 right-2 bg-red-100 text-red-600 hover:bg-red-200 p-1 rounded-full"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>`;
-                html += `<div><strong class="text-gray-700">預約時間:</strong><p class="pl-2">${formatDateTime(appt.appointment_date)}</p></div>`;
-                html += `<div><strong class="text-gray-700">看診原因:</strong><p class="pl-2">${appt.reason || '<span class="text-gray-400">未提供</span>'}</p></div>`;
+                html += `<div><strong class="text-gray-700">看診時間:</strong><div class="flex items-center pl-2">${formatDateTime(appt.appointment_date)} ${typeTag}</div></div>`;
+                html += `<div><strong class="text-gray-700">看診事由:</strong><p class="pl-2">${displayReason}</p></div>`;
+
                 if (appt.tasks && appt.tasks.length > 0) {
                     html += `<div class="pt-2 border-t mt-2">`;
                     appt.tasks.forEach(task => {
                         const description = task.description;
                         const submissionTime = formatDateTime(task.created_at);
-                        html += `<div class="text-xs text-gray-500 mb-1">回報時間: ${submissionTime}</div>`;
-                        if (!description.includes('[症狀]:') && !description.includes('[提問]:')) {
-                            html += `<p class="pl-2">${description}</p>`;
-                        } else {
-                            const parts = description.split('|');
-                            const symptoms = (parts.find(p => p.includes('[症狀]:')) || '').replace('[症狀]:', '').trim();
-                            const questions = (parts.find(p => p.includes('[提問]:')) || '').replace('[提問]:', '').trim();
-                            html += `<div><strong class="text-gray-600 text-sm">症狀回報:</strong><p class="pl-2 text-gray-800">${symptoms || '<span class="text-gray-400">無</span>'}</p></div>`;
-                            html += `<div><strong class="text-gray-600 text-sm">想問醫生的問題:</strong><p class="pl-2 text-gray-800">${questions || '<span class="text-gray-400">無</span>'}</p></div>`;
-                        }
+                        html += `<div class="text-xs text-gray-500 mb-1">病患回報時間: ${submissionTime}</div>`;
+                        
+                        const parts = description.split('|');
+                        const symptoms = (parts.find(p => p.includes('[症狀]:')) || '').replace('[症狀]:', '').trim();
+                        const questions = (parts.find(p => p.includes('[提問]:')) || '').replace('[提問]:', '').trim();
+                        
+                        if (symptoms !== '無' && symptoms) html += `<div><strong class="text-gray-600 text-sm">症狀回報:</strong><p class="pl-2 text-gray-800">${symptoms}</p></div>`;
+                        if (questions !== '無' && questions) html += `<div><strong class="text-gray-600 text-sm">想問醫生的問題:</strong><p class="pl-2 text-gray-800">${questions}</p></div>`;
                     });
                     html += `</div>`;
                 }
@@ -585,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const updatedPatientProfile = allPatients.find(p => p.id === currentPatientForActions.id);
                 if (updatedPatientProfile) {
                     showChartView(updatedPatientProfile);
-                    const activeSidebarItem = sidebarMenu.querySelector(`.sidebar-item[data-index='${allPatients.findIndex(p => p.id === updatedPatientProfile.id)}']`);
+                    const activeSidebarItem = sidebarMenu.querySelector(`.sidebar-item[data-patient-id='${updatedPatientProfile.id}']`);
                     if(activeSidebarItem) {
                         document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
                         activeSidebarItem.classList.add('active');
@@ -595,9 +666,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     showWelcomeView();
                 }
             }
-
+            return { patients, appointments };
         } catch (error) {
             console.error("刷新資料失敗:", error);
+            throw error;
         }
     }
 
@@ -620,7 +692,14 @@ document.addEventListener('DOMContentLoaded', () => {
         authContainer.classList.remove('hidden');
         mainAppView.classList.add('hidden');
         const authTemplate = document.getElementById('auth-template');
-        authContainer.innerHTML = authTemplate.innerHTML;
+        
+        // --- THIS IS THE FIX ---
+        // Clear the container first
+        authContainer.innerHTML = ''; 
+        // Clone the content of the template and append it
+        authContainer.appendChild(authTemplate.content.cloneNode(true)); 
+        // --- END OF FIX ---
+
         initializeAuthEventListeners();
     }
 
@@ -699,7 +778,7 @@ document.addEventListener('DOMContentLoaded', () => {
             audioChunks = [];
             mediaRecorder = new MediaRecorder(stream);
             mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
-            mediaRecorder.onstop = uploadAndTranscribeAudio; // [修改] 停止錄音後只進行轉錄
+            mediaRecorder.onstop = uploadAndTranscribeAudio;
             mediaRecorder.start();
             const btn = document.getElementById('start-recording-btn');
             btn.classList.remove('bg-green-500', 'hover:bg-green-600');
@@ -733,7 +812,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // [修改] 將摘要功能分離出來
     async function uploadAndTranscribeAudio() {
         const transcriptArea = document.getElementById('transcript-area');
         transcriptArea.value = '語音轉文字中，請稍候...';
@@ -750,8 +828,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- [新增] ---
-    // 為「生成摘要」按鈕添加事件監聽器
     document.getElementById('generate-summary-btn').addEventListener('click', async () => {
         const transcriptArea = document.getElementById('transcript-area');
         const summaryTextarea = document.getElementById('summary-textarea');
@@ -771,26 +847,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-
-    logoutButton.addEventListener('click', logout);
-
-    addAppointmentBtn.addEventListener('click', async () => {
+    async function openAddAppointmentModal(preselectedPatient = null) {
         addAppointmentForm.reset();
         document.getElementById('add-appointment-message').textContent = '';
         const patientSelect = document.getElementById('patient-select');
         patientSelect.innerHTML = '<option value="">載入中...</option>';
+        patientSelect.disabled = false;
+
         openModal(addAppointmentModal);
+
         try {
-            const patients = await apiRequest('/patients/');
+            const patients = allPatients.length > 0 ? allPatients : await apiRequest('/doctors/me/patients');
+            
             if (patients && patients.length > 0) {
-                patientSelect.innerHTML = patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                patientSelect.innerHTML = '<option value="">請選擇病患</option>';
+                patientSelect.innerHTML += patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+                if (preselectedPatient) {
+                    patientSelect.value = preselectedPatient.id;
+                    patientSelect.disabled = true;
+                }
             } else {
-                patientSelect.innerHTML = '<option value="">沒有可選擇的病患</option>';
+                patientSelect.innerHTML = '<option value="">沒有可預約的病患</option>';
+                const messageEl = document.getElementById('add-appointment-message');
+                messageEl.textContent = '提示：請先使用「現場掛號」為新病患建立看診紀錄。';
+                messageEl.className = 'mt-4 text-center text-blue-500';
             }
         } catch (error) {
             patientSelect.innerHTML = `<option value="">載入失敗</option>`;
         }
+    }
+
+    addAppointmentBtn.addEventListener('click', () => {
+        openAddAppointmentModal();
     });
+
 
     addAppointmentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -798,7 +889,6 @@ document.addEventListener('DOMContentLoaded', () => {
         messageEl.textContent = '新增中...';
         const appointmentData = {
             patient_id: parseInt(document.getElementById('patient-select').value),
-            doctor_id: currentDoctorProfile.id,
             appointment_date: document.getElementById('appointment-date').value,
             reason: document.getElementById('appointment-reason').value
         };
@@ -824,6 +914,7 @@ document.addEventListener('DOMContentLoaded', () => {
             patient_id: parseInt(document.getElementById('prescribe-patient-id').value),
             appointment_id: parseInt(document.getElementById('prescribe-appointment-id').value),
             medication_name: document.getElementById('medication-name').value,
+            medication_code: document.getElementById('medication-code').value, 
             dosage: document.getElementById('dosage').value,
             frequency: document.getElementById('frequency').value
         };
@@ -843,6 +934,71 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal();
         }
     });
+
+    const walkInModal = document.getElementById('walk-in-appointment-modal');
+    const showWalkInBtn = document.getElementById('show-walk-in-modal-btn');
+    const submitWalkInBtn = document.getElementById('submit-walk-in-appointment-btn');
+    const walkInPatientSelect = document.getElementById('walk-in-patient-select');
+    const walkInForm = document.getElementById('walk-in-appointment-form');
+    const walkInTimeInput = document.getElementById('walk-in-time');
+
+    showWalkInBtn.addEventListener('click', async () => {
+        walkInForm.reset();
+        walkInTimeInput.value = formatDateTime(new Date());
+        
+        walkInPatientSelect.innerHTML = '<option value="">載入中...</option>';
+        openModal(walkInModal);
+        try {
+            const patients = await apiRequest('/patients/', 'GET');
+            walkInPatientSelect.innerHTML = '<option value="">請選擇病患</option>';
+            patients.forEach(patient => {
+                const option = document.createElement('option');
+                option.value = patient.id;
+                option.textContent = `${patient.name} (ID: ${patient.id})`;
+                walkInPatientSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error("載入病患列表失敗:", error);
+            walkInPatientSelect.innerHTML = '<option value="">載入失敗</option>';
+        }
+    });
+
+    submitWalkInBtn.addEventListener('click', async () => {
+        const patientId = parseInt(walkInPatientSelect.value);
+        const reason = document.getElementById('walk-in-reason').value;
+
+        if (!patientId || !reason) {
+            alert('請選擇病患並填寫主要事由。');
+            return;
+        }
+        
+        const walkInData = {
+            patient_id: patientId,
+            reason: reason 
+        };
+
+        try {
+            await apiRequest('/appointments/walk-in', 'POST', walkInData);
+            
+            alert('現場掛號成功！');
+            closeModal();
+            
+            const { patients } = await refreshData();
+            const newPatientProfile = patients.find(p => p.id === patientId);
+            if (newPatientProfile) {
+                const newPatientSidebarItem = sidebarMenu.querySelector(`.sidebar-item[data-patient-id='${patientId}']`);
+                if (newPatientSidebarItem) {
+                    newPatientSidebarItem.click();
+                } else {
+                    showChartView(newPatientProfile);
+                }
+            }
+        } catch (error) {
+            console.error('現場掛號失敗:', error);
+            alert(`現場掛號失敗: ${error.message}`);
+        }
+    });
+
 
     function init() {
         if (localStorage.getItem('authToken')) {
