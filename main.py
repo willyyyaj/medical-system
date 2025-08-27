@@ -10,7 +10,8 @@ from typing import List, Optional, Dict
 import json
 import shutil
 import os
-
+import traceback 
+from sqlalchemy.orm import joinedload, selectinload
 # --- Google Gemini AI 相關匯入 ---
 import google.generativeai as genai
 
@@ -543,22 +544,40 @@ def read_doctor_me(current_user: User = Depends(get_current_user), db: Session =
 
 @app.get("/doctors/me/appointments", response_model=List[AppointmentForDoctor], tags=["Doctors"])
 def read_doctor_appointments(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if current_user.role != "Doctor":
-        raise HTTPException(status_code=403, detail="權限不足，僅限醫生本人操作")
-    
-    doctor_profile = db.query(DoctorDB).filter(DoctorDB.user_id == current_user.id).first()
-    if not doctor_profile:
-        raise HTTPException(status_code=404, detail="找不到對應的醫生資料")
+    try:
+        # --- 開始執行原有邏輯 ---
+        if current_user.role != "Doctor":
+            raise HTTPException(status_code=403, detail="權限不足，僅限醫生本人操作")
+        
+        doctor_profile = db.query(DoctorDB).filter(DoctorDB.user_id == current_user.id).first()
+        if not doctor_profile:
+            raise HTTPException(status_code=404, detail="找不到對應的醫生資料")
 
-    # 【最終修正版 v2】
-    # 使用 joinedload 載入 ...-to-one (patient)
-    # 使用 selectinload 載入 one-to-many (tasks)，避免笛卡爾積錯誤
-    appointments = db.query(AppointmentDB).options(
-        joinedload(AppointmentDB.patient),
-        selectinload(AppointmentDB.tasks)  # <--- 將 tasks 的載入方式改為 selectinload
-    ).filter(AppointmentDB.doctor_id == doctor_profile.id).order_by(AppointmentDB.appointment_date.desc()).all()
-    
-    return appointments
+        logging.info("--- 步驟 1: 成功獲取醫生資料 ---")
+
+        appointments = db.query(AppointmentDB).options(
+            joinedload(AppointmentDB.patient),
+            selectinload(AppointmentDB.tasks)
+        ).filter(AppointmentDB.doctor_id == doctor_profile.id).order_by(AppointmentDB.appointment_date.desc()).all()
+        
+        logging.info(f"--- 步驟 2: 成功查詢到 {len(appointments)} 筆約診紀錄 ---")
+        
+        # FastAPI 會在這裡嘗試將 appointments 轉換為 JSON 回應，錯誤可能發生在這之後
+        # 我們先假設查詢是成功的，直接回傳
+        return appointments
+
+    except Exception as e:
+        # --- 如果上方任何地方出錯，就會執行這裡 ---
+        # 這個區塊會將最詳細的錯誤訊息印在您的 Render Log 中
+        logging.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        logging.error("!!!!!!!!!! /doctors/me/appointments API 發生嚴重錯誤 !!!!!!!!!!")
+        logging.error(f"錯誤類型 (Error Type): {type(e).__name__}")
+        logging.error(f"錯誤訊息 (Error Message): {str(e)}")
+        logging.error(f"詳細追蹤 (Traceback): \n{traceback.format_exc()}")
+        logging.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        
+        # 即使出錯，也回傳一個標準的 500 錯誤給前端
+        raise HTTPException(status_code=500, detail="後端伺服器在處理醫師約診資料時發生未預期的錯誤。")
 
 @app.get("/doctors/me/patients", response_model=List[Patient], tags=["Doctors"], summary="獲取目前登入醫生的病患列表")
 def read_doctor_patients(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
