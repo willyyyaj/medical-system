@@ -1,14 +1,46 @@
-# For Render Deployment
-venv/
-.DS_Store
+# 排除 Node.js 和套件資料夾 (通常含有二進制檔)
+node_modules/
+.env
 
-# macOS system file
+# 排除常見的系統和開發工具資料夾
 .DS_Store
+.idea/
+.vscode/
 
-# Python cache
+# 排除常見的編譯或測試輸出
+*.log
+dist/
+build/
+coverage/
+.coverage
+.coverage.*
+coverage.xml
+.cache/
+.ruff_cache/
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+venv_old_python38/
 
-# Database files
+# Databases
 *.db
+*.sqlite
 *.sqlite3
+medical_system_final_v2.db
+
+# Server logs
+server.log
+server_output.log
+
+# Firebase CLI state
+.firebase/
+**/.firebase/**
+.firebaserc
